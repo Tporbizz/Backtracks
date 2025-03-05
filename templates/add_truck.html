@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}ลงทะเบียนรถว่าง - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn-back me-3">
+            <span>←</span>
+        </a>
+        <h1 class="h4 mb-0">ลงทะเบียนรถว่าง</h1>
+    </div>
+    
+    <div class="auth-container">
+        <div class="auth-body">
+            <form method="POST">
+                {{ truck_form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="plate" class="form-label">ป้ายทะเบียน</label>
+                    {{ truck_form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="truck_type" class="form-label">ประเภทรถ</label>
+                    {{ truck_form.truck_type(class="form-control", id="truck_type") }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="start" class="form-label">จุดเริ่มต้น</label>
+                            {{ truck_form.start(class="form-control", id="start") }}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="dest" class="form-label">จุดหมายปลายทาง</label>
+                            {{ truck_form.dest(class="form-control", id="dest") }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="return_date" class="form-label">วันที่ว่าง</label>
+                    {{ truck_form.return_date(class="form-control", id="return_date") }}
+                </div>
+                
+                <div id="route-preview" class="route-preview mb-3" style="display: none;">
+                    <div class="route-map" id="route-map"></div>
+                    <div class="route-info">
+                        <div class="route-item">
+                            <i class="route-icon">📍</i>
+                            <span>ระยะทาง: <strong id="route-distance">-</strong></span>
+                        </div>
+                        <div class="route-item">
+                            <i class="route-icon">⏱️</i>
+                            <span>เวลาโดยประมาณ: <strong id="route-time">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="price-estimate" class="alert alert-info mb-3" style="display: none;">
+                    <strong>ประมาณการราคา:</strong> <span id="price-value">0</span> บาท
+                    <div><small>คำนวณจากระยะทาง × 12 บาท/กม. ปัดเป็นหลัก 500</small></div>
+                </div>
+                
+                {{ truck_form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var routeMap = null;
+    
+    // Initialize date picker
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners for price estimation
+        document.getElementById('start').addEventListener('change', updateRouteAndPrice);
+        document.getElementById('dest').addEventListener('change', updateRouteAndPrice);
+    });
+    
+    function initRouteMap() {
+        if (!routeMap) {
+            document.getElementById('route-preview').style.display = 'block';
+            routeMap = L.map('route-map').setView([15.87, 100.9925], 6);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 18
+            }).addTo(routeMap);
+        }
+    }
+    
+    function updateRouteAndPrice() {
+        var start = document.getElementById('start').value;
+        var dest = document.getElementById('dest').value;
+        
+        if (start && dest) {
+            initRouteMap();
+            
+            // This would be replaced with actual API call in production
+            var distance = Math.floor(Math.random() * 1500) + 500;
+            var price = Math.floor(distance * 12);
+            // ปัดเป็นหลัก 500
+            price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
+            
+            document.getElementById('price-estimate').style.display = 'block';
+            document.getElementById('price-value').textContent = price.toLocaleString();
+            
+            // Update route information
+            document.getElementById('route-distance').textContent = distance + ' กม.';
+            
+            // Calculate estimated time (approx. 60km/h)
+            var hours = Math.floor(distance / 60);
+            var minutes = Math.floor((distance % 60) / 60 * 60);
+            document.getElementById('route-time').textContent = hours + ' ชั่วโมง ' + minutes + ' นาที';
+            
+            // Clear previous route
+            routeMap.eachLayer(function(layer) {
+                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                    routeMap.removeLayer(layer);
+                }
+            });
+            
+            // Add markers for start and destination
+            // In production, use real coordinates from an API
+            var startCoords = getRandomCoordinates();
+            var destCoords = getRandomCoordinates();
+            
+            var startMarker = L.marker(startCoords).addTo(routeMap).bindPopup(start);
+            var destMarker = L.marker(destCoords).addTo(routeMap).bindPopup(dest);
+            
+            // Draw route line
+            var routeLine = L.polyline([startCoords, destCoords], {color: '#0052CC'}).addTo(routeMap);
+            
+            // Fit map to show the route
+            routeMap.fitBounds(routeLine.getBounds(), {padding: [30, 30]});
+        }
+    }
+    
+    function getRandomCoordinates() {
+        // For demo only - in production use real coordinates
+        var lat = 13.0 + Math.random() * 5.0;
+        var lng = 99.0 + Math.random() * 3.0;
+        return [lat, lng];
+    }
+</script>
+{% endblock %}

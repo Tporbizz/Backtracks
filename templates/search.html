@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}ค้นหารถ - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="h4 mb-3">ค้นหารถว่าง</h1>
+    
+    <!-- Search Filter -->
+    <div class="search-filter">
+        <form method="POST">
+            {{ search_form.hidden_tag() }}
+            
+            <div class="mb-3">
+                <label for="start_province" class="form-label">จังหวัดต้นทาง</label>
+                {{ search_form.start_province(class="form-control", id="start_province") }}
+            </div>
+            
+            <div class="mb-3">
+                <label for="truck_type" class="form-label">ประเภทรถ</label>
+                {{ search_form.truck_type(class="form-control", id="truck_type") }}
+            </div>
+            
+            <div class="mb-3">
+                <label for="date_range" class="form-label">ช่วงวันที่</label>
+                <input type="date" class="form-control" id="date_range" name="date_range">
+            </div>
+            
+            {{ search_form.submit(class="btn btn-primary") }}
+            <button type="button" class="btn btn-outline" onclick="resetForm()">รีเซ็ต</button>
+        </form>
+    </div>
+    
+    <!-- Map Container -->
+    <div class="map-container mt-4">
+        <div id="map"></div>
+    </div>
+    
+    <!-- Results -->
+    <h2 class="h5 mt-4 mb-3">ผลการค้นหา</h2>
+    <div class="truck-list">
+        {% if trucks and trucks|length > 0 %}
+            {% for truck in trucks %}
+                <div class="truck-card {% if truck.is_confirmed %}unavailable{% endif %}">
+                    <div class="truck-card-header">
+                        <div>
+                            <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
+                            <div class="truck-details">
+                                {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
+                                {% if truck.is_confirmed %}
+                                    <span class="text-danger">ไม่ว่าง</span>
+                                {% else %}
+                                    ว่างวันที่: {{ truck.return_date }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="truck-price">
+                            {% if truck.is_confirmed %}
+                                จองแล้ว
+                            {% else %}
+                                {% if current_user.trucks and truck in current_user.trucks %}
+                                    {{ "{:,}".format(truck.price) }}฿
+                                {% else %}
+                                    {{ "{:,}".format(truck.price * 1.2) }}฿
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-sm mt-2" onclick="showTruckDetails({{ truck.id }})">ดูรายละเอียด</button>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">ไม่พบรถที่ตรงกับเงื่อนไขการค้นหา</div>
+        {% endif %}
+    </div>
+    
+    <!-- Truck Details Modal -->
+    <div class="modal fade" id="truckDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">รายละเอียดรถ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="truck-detail-content"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">ปิด</button>
+                    <button type="button" class="btn btn-primary" id="contactDriverBtn">ติดต่อคนขับ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize map
+    var map = L.map('map').setView([15.87, 100.9925], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
+        maxBounds: L.latLngBounds(L.latLng(5.6, 97.3), L.latLng(20.5, 105.6)),
+        minZoom: 6
+    }).addTo(map);
+    
+    // Add markers for trucks
+    var trucks = {{ trucks|tojson|safe }};
+    var markers = {};
+    
+    trucks.forEach(function(truck) {
+        if (truck.lat && truck.lon) {
+            var markerColor = truck.is_confirmed ? '#FF5630' : '#36B37E';
+            var marker = L.circleMarker([truck.lat, truck.lon], {
+                radius: 8,
+                fillColor: markerColor,
+                color: '#fff',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+            
+            marker.bindPopup(
+                '<strong>' + truck.plate + '</strong><br>' +
+                'เส้นทาง: ' + truck.start + ' → ' + truck.dest + '<br>' +
+                'วันที่ว่าง: ' + truck.return_date + '<br>' +
+                'ราคา: ' + formatPrice(truck.price) + ' บาท'
+            );
+            
+            markers[truck.id] = marker;
+            
+            marker.on('click', function() {
+                showTruckDetails(truck.id);
+            });
+        }
+    });
+    
+    function formatPrice(price) {
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    function showTruckDetails(truckId) {
+        var truck = trucks.find(t => t.id === truckId);
+        if (truck) {
+            // ราคาสำหรับผู้ใช้ทั่วไป (บวก 20%)
+            var price = truck.price;
+            var isOwner = false;
+            
+            // ถ้าเป็นคนขับที่เป็นเจ้าของ จะเห็นราคาปกติ
+            {% if current_user.trucks %}
+                isOwner = {{ current_user.trucks|map(attribute='id')|list|tojson }}.includes(truckId);
+            {% endif %}
+            
+            if (!isOwner) {
+                price = Math.round(price * 1.2);
+            }
+            
+            var content = `
+                <div class="truck-detail">
+                    <div class="truck-driver-info mb-3">
+                        <div class="driver-avatar">
+                            <span>${truck.user.name ? truck.user.name[0].toUpperCase() : '?'}</span>
+                        </div>
+                        <div>
+                            <h6>${truck.user.name || truck.user.email}</h6>
+                            <div class="rating">
+                                <span class="stars">★★★★☆</span>
+                                <span class="count">(4.2 จาก 24 รีวิว)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="truck-info">
+                        <p><strong>ป้ายทะเบียน:</strong> ${truck.plate}</p>
+                        <p><strong>ประเภทรถ:</strong> ${truck.truck_type}</p>
+                        <p><strong>เส้นทาง:</strong> ${truck.start} → ${truck.dest}</p>
+                        <p><strong>วันที่ว่าง:</strong> ${truck.return_date}</p>
+                        <p><strong>ราคา:</strong> ${formatPrice(price)} บาท</p>
+                    </div>
+                    
+                    <div class="route-info mt-3 mb-3">
+                        <div class="route-distance">
+                            <i class="route-icon">📍</i>
+                            <span>ระยะทางประมาณ: <strong>${calculateDistance(truck.start, truck.dest)} กม.</strong></span>
+                        </div>
+                        <div class="route-time">
+                            <i class="route-icon">⏱️</i>
+                            <span>เวลาเดินทางประมาณ: <strong>${calculateTime(truck.start, truck.dest)}</strong></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('truck-detail-content').innerHTML = content;
+            
+            // ตั้งค่าปุ่มติดต่อคนขับ
+            document.getElementById('contactDriverBtn').onclick = function() {
+                window.location.href = 'tel:' + (truck.user.phone || '');
+            };
+            
+            var modal = new bootstrap.Modal(document.getElementById('truckDetailsModal'));
+            modal.show();
+            
+            // Focus on the marker
+            if (markers[truckId]) {
+                map.setView(markers[truckId].getLatLng(), 8);
+                markers[truckId].openPopup();
+            }
+        }
+    }
+    
+    function calculateDistance(start, dest) {
+        // ในโค้ดจริงควรใช้ API คำนวณระยะทาง
+        // นี่เป็นเพียงตัวอย่าง
+        return Math.floor(Math.random() * 500) + 100;
+    }
+    
+    function calculateTime(start, dest) {
+        // ในโค้ดจริงควรใช้ API คำนวณเวลา
+        // นี่เป็นเพียงตัวอย่าง
+        var hours = Math.floor(Math.random() * 8) + 2;
+        var minutes = Math.floor(Math.random() * 60);
+        return hours + ' ชั่วโมง ' + minutes + ' นาที';
+    }
+    
+    function resetForm() {
+        document.getElementById('start_province').value = '';
+        document.getElementById('truck_type').value = '';
+        document.getElementById('date_range').value = '';
+    }
+</script>
+{% endblock %}

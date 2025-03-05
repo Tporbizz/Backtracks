@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}โปรไฟล์ - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="h4 mb-4">โปรไฟล์ของฉัน</h1>
+    
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <div class="avatar-circle">
+                    <span>{{ current_user.name[0] | upper }}</span>
+                </div>
+            </div>
+            <div class="profile-info">
+                <h2>{{ current_user.name }}</h2>
+                <p>{{ current_user.email }}</p>
+                <p>{{ current_user.phone }}</p>
+            </div>
+        </div>
+        
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-value">{{ current_user.trucks|length }}</span>
+                <span class="stat-label">รถทั้งหมด</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">{{ current_user.trucks|selectattr('is_confirmed', 'eq', true)|list|length }}</span>
+                <span class="stat-label">รถที่จองแล้ว</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value">0</span>
+                <span class="stat-label">รีวิว</span>
+            </div>
+        </div>
+        
+        <div class="profile-actions">
+            <a href="#" class="btn btn-primary btn-sm">แก้ไขโปรไฟล์</a>
+            <a href="#" class="btn btn-outline btn-sm">เปลี่ยนรหัสผ่าน</a>
+        </div>
+    </div>
+    
+    <div class="affiliate-card mt-4">
+        <h3 class="h5 mb-3">โปรแกรมแนะนำเพื่อน</h3>
+        <p>แนะนำเพื่อนให้ใช้ BackTracks และรับรายได้ 5% จากค่าสมาชิก</p>
+        
+        <div class="referral-code mt-3">
+            <p class="referral-label">รหัสแนะนำของคุณ:</p>
+            <div class="referral-box">
+                <span class="referral-text">BT{{ current_user.id }}{{ current_user.name|truncate(2, True, '') }}</span>
+                <button class="referral-copy" onclick="copyReferralCode()">คัดลอก</button>
+            </div>
+        </div>
+        
+        <div class="referral-share mt-3">
+            <p>แชร์ลิงก์:</p>
+            <div class="share-buttons">
+                <a href="#" class="share-btn facebook">Facebook</a>
+                <a href="#" class="share-btn line">Line</a>
+                <a href="#" class="share-btn twitter">Twitter</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="affiliate-stats mt-4">
+        <h3 class="h5 mb-3">สถิติการแนะนำ</h3>
+        <div class="stats-container">
+            <div class="stat-row">
+                <div class="stat-label">จำนวนผู้ใช้ที่แนะนำ:</div>
+                <div class="stat-value">0 คน</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">รายได้สะสม:</div>
+                <div class="stat-value">0.00 บาท</div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-label">รายได้ที่รอโอน:</div>
+                <div class="stat-value">0.00 บาท</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyReferralCode() {
+        var code = document.querySelector('.referral-text').innerText;
+        navigator.clipboard.writeText(code).then(function() {
+            alert('คัดลอกรหัสแนะนำแล้ว: ' + code);
+        }, function() {
+            alert('ไม่สามารถคัดลอกได้');
+        });
+    }
+</script>
+{% endblock %}

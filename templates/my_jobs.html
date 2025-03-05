@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}งานของฉัน - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="h4 mb-3">งานของฉัน</h1>
+    
+    <!-- Job Tabs -->
+    <ul class="nav nav-tabs mb-4" id="jobTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+                รถที่ว่างอยู่
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="booked-tab" data-bs-toggle="tab" data-bs-target="#booked" type="button" role="tab">
+                รถที่รับงานแล้ว
+            </button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="jobTabsContent">
+        <!-- Active Jobs -->
+        <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
+            {% set active_trucks = trucks|selectattr('is_confirmed', 'eq', false)|list %}
+            
+            {% if active_trucks|length > 0 %}
+                {% for truck in active_trucks %}
+                    <div class="truck-card">
+                        <div class="truck-card-header">
+                            <div>
+                                <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
+                                <div class="truck-details">
+                                    {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
+                                    ว่างวันที่: {{ truck.return_date }}
+                                </div>
+                            </div>
+                            <div class="truck-price">
+                                {{ "{:,}".format(truck.price) }}฿
+                            </div>
+                        </div>
+                        
+                        <div class="truck-actions mt-2">
+                            <form method="POST" action="{{ url_for('confirm_truck', truck_id=truck.id) }}">
+                                <button type="submit" class="btn btn-primary btn-sm">ยืนยันรับงาน</button>
+                            </form>
+                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-sm">แก้ไข</a>
+                            <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">ลบ</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">คุณยังไม่มีรถที่ว่างอยู่</div>
+            {% endif %}
+        </div>
+        
+        <!-- Booked Jobs -->
+        <div class="tab-pane fade" id="booked" role="tabpanel" aria-labelledby="booked-tab">
+            {% set booked_trucks = trucks|selectattr('is_confirmed', 'eq', true)|list %}
+            
+            {% if booked_trucks|length > 0 %}
+                {% for truck in booked_trucks %}
+                    <div class="truck-card booked">
+                        <div class="truck-card-header">
+                            <div>
+                                <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
+                                <div class="truck-details">
+                                    {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
+                                    <span class="booked-badge">รับงานแล้ว</span>
+                                </div>
+                            </div>
+                            <div class="truck-price confirmed">
+                                {{ "{:,}".format(truck.price) }}฿
+                            </div>
+                        </div>
+                        
+                        <div class="truck-job-info mt-2">
+                            <p>ยืนยันรับงานเมื่อ: {{ "วันนี้" if truck.is_new else "เร็วๆ นี้" }}</p>
+                        </div>
+                        
+                        <div class="truck-actions mt-2">
+                            <button class="btn btn-primary btn-sm">ดูรายละเอียดงาน</button>
+                            <button class="btn btn-outline btn-sm">ดูเส้นทาง</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">คุณยังไม่มีรถที่รับงานแล้ว</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- No Jobs Message -->
+    {% if trucks|length == 0 %}
+        <div class="empty-jobs text-center mt-4">
+            <div class="empty-icon mb-3">📋</div>
+            <h3 class="h5">ยังไม่มีงาน</h3>
+            <p>คลิกปุ่ม "+" ด้านล่างเพื่อเพิ่มรถและรับงาน</p>
+            <a href="{{ url_for('add_truck') }}" class="btn btn-primary mt-2">เพิ่มรถใหม่</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

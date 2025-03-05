@@ -138,16 +138,9 @@ class SearchForm(FlaskForm):
     ])
     submit = SubmitField('ค้นหา')
 
-# สร้างฐานข้อมูลและข้อมูลตัวอย่าง
-# เปลี่ยนจาก
-@app.before_first_request
-def create_tables():
-    # โค้ดภายใน...
 
-# เปลี่ยนเป็น
 with app.app_context():
-    db.create_all()
-    
+    db.create_all()    
     if not User.query.filter_by(email="support@backtracks.com").first():
         bot_user = User(email="support@backtracks.com", phone="0812345678", name="BackTracks Bot", password="sage123456")
         db.session.add(bot_user)
@@ -457,7 +450,7 @@ def search():
         truck.is_new = is_new_job(truck.return_date)
         
     return render_template("search.html", search_form=search_form, trucks=trucks,
-                           provinces=provinces, contact_phone="08-123-45678", brand_name=BRAND_NAME,
+                           provinces=provinces) contact_phone="08-123-45678", brand_name=BRAND_NAME,
                            background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
                            text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
                            accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
@@ -496,8 +489,7 @@ def add_truck():
         flash("ลงข้อมูลรถสำเร็จ!", "success")
         return redirect(url_for("dashboard"))
         
-    return render_template("add_truck.html", truck_form=truck_form,
-                           provinces=provinces, contact_phone="08-123-45678", brand_name=BRAND_NAME,
+    return render_template("add_truck.html", truck_form=truck_form, provinces=provinces)contact_phone="08-123-45678", brand_name=BRAND_NAME,
                            background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
                            text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
                            accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
@@ -512,8 +504,7 @@ def my_jobs():
     for truck in my_trucks:
         truck.is_new = is_new_job(truck.return_date)
         
-    return render_template("my_jobs.html", trucks=my_trucks,
-                           provinces=provinces, contact_phone="08-123-45678", brand_name=BRAND_NAME,
+    return render_template("my_jobs.html", trucks=my_trucks, provinces=provinces)contact_phone="08-123-45678", brand_name=BRAND_NAME,
                            background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
                            text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
                            accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
@@ -522,7 +513,7 @@ def my_jobs():
 @app.route("/profile")
 @login_required
 def profile():
-    return render_template("profile.html", user=current_user,
+    return render_template("profile.html", user=current_user)
                            contact_phone="08-123-45678", brand_name=BRAND_NAME,
                            background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
                            text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
