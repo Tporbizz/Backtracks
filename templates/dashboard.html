@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}หน้าแรก - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="h4 mb-3">ยินดีต้อนรับ, {{ current_user.name }}</h1>
+    
+    <!-- Map Container -->
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <form method="POST" name="search">
+            {{ search_form.hidden_tag() }}
+            <div class="d-flex align-items-center">
+                {{ search_form.start_province(class="form-control", placeholder="เลือกจังหวัด") }}
+                <button class="filter-toggle ms-2" type="button" id="filterToggle">กรอง</button>
+            </div>
+            
+            <div class="filter-container" id="filterContainer">
+                <div class="mb-3">
+                    <label for="truck_type" class="form-label">ประเภทรถ</label>
+                    {{ search_form.truck_type(class="form-control", id="truck_type") }}
+                </div>
+                {{ search_form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+    
+    <!-- Truck Registration Form - Collapsible -->
+    <div class="accordion mb-4" id="truckFormAccordion">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseForm" aria-expanded="false" aria-controls="collapseForm">
+                    ลงทะเบียนรถว่าง
+                </button>
+            </h2>
+            <div id="collapseForm" class="accordion-collapse collapse" aria-labelledby="headingOne">
+                <div class="accordion-body">
+                    <form method="POST" name="truck">
+                        {{ truck_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label for="plate" class="form-label">ป้ายทะเบียน</label>
+                            {{ truck_form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="truck_type" class="form-label">ประเภทรถ</label>
+                            {{ truck_form.truck_type(class="form-control", id="truck_type") }}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="start" class="form-label">จุดเริ่มต้น</label>
+                                    {{ truck_form.start(class="form-control", id="start") }}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label for="dest" class="form-label">จุดหมายปลายทาง</label>
+                                    {{ truck_form.dest(class="form-control", id="dest") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="return_date" class="form-label">วันที่ว่าง</label>
+                            {{ truck_form.return_date(class="form-control", id="return_date") }}
+                        </div>
+                        
+                        <div id="price-estimate" class="alert alert-info mb-3" style="display: none;">
+                            <strong>ประมาณการราคา:</strong> <span id="price-value">0</span> บาท
+                            <div><small>คำนวณจากระยะทาง × 12 บาท/กม. ปัดเป็นหลัก 500</small></div>
+                        </div>
+                        
+                        {{ truck_form.submit(class="btn btn-primary") }}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Truck List -->
+    <h2 class="h5 mb-3">รถว่างล่าสุด</h2>
+    <div class="truck-list">
+        {% if trucks and trucks|length > 0 %}
+            {% for truck in trucks %}
+                <div class="truck-card {% if truck.is_confirmed %}unavailable{% endif %}">
+                    <div class="truck-card-header">
+                        <div>
+                            <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
+                            <div class="truck-details">
+                                {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
+                                {% if truck.is_confirmed %}
+                                    <span class="text-danger">ไม่ว่าง</span>
+                                {% else %}
+                                    ว่างวันที่: {{ truck.return_date }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="truck-price">
+                            {% if truck.is_confirmed %}
+                                จองแล้ว
+                            {% else %}
+                                {{ "{:,}".format(truck.price) }}฿
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if truck.user_id == current_user.id and not truck.is_confirmed %}
+                        <div class="truck-actions">
+                            <form method="POST" action="{{ url_for('confirm_truck', truck_id=truck.id) }}">
+                                <button type="submit" class="btn btn-primary btn-sm">ยืนยันรับงาน</button>
+                            </form>
+                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-sm">แก้ไข</a>
+                            <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">ลบ</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <button class="btn btn-primary btn-sm" onclick="showTruckDetails({{ truck.id }})">ดูรายละเอียด</button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">ไม่มีข้อมูลเส้นทางรถในระบบ</div>
+        {% endif %}
+    </div>
+    
+    <!-- Truck Details Modal -->
+    <div class="modal fade" id="truckDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">รายละเอียดรถ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="truck-detail-content"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize map
+    var map = L.map('map').setView([15.87, 100.9925], 6);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
+        maxBounds: L.latLngBounds(L.latLng(5.6, 97.3), L.latLng(20.5, 105.6)),
+        minZoom: 6
+    }).addTo(map);
+    
+    // Add markers for trucks
+    var trucks = {{ trucks|tojson|safe }};
+    var markers = {};
+    
+    trucks.forEach(function(truck) {
+        if (truck.lat && truck.lon) {
+            var markerColor = truck.is_confirmed ? '#FF5630' : '#36B37E';
+            var marker = L.circleMarker([truck.lat, truck.lon], {
+                radius: 8,
+                fillColor: markerColor,
+                color: '#fff',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(map);
+            
+            marker.bindPopup(
+                '<strong>' + truck.plate + '</strong><br>' +
+                'เส้นทาง: ' + truck.start + ' → ' + truck.dest + '<br>' +
+                'วันที่ว่าง: ' + truck.return_date + '<br>' +
+                'ราคา: ' + truck.price + ' บาท'
+            );
+            
+            markers[truck.id] = marker;
+        }
+    });
+    
+    // Filter toggle
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        document.getElementById('filterContainer').classList.toggle('show');
+    });
+    
+    // Price estimation
+    function updatePriceEstimate() {
+        var start = document.getElementById('start').value;
+        var dest = document.getElementById('dest').value;
+        
+        if (start && dest) {
+            // This would be replaced with actual API call in production
+            // For demo, we'll use a random price between 5000 and 20000
+            var distance = Math.floor(Math.random() * 1500) + 500;
+var price = Math.floor(distance * 12);
+            // ปัดเป็นหลัก 500
+            price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
+            
+            document.getElementById('price-estimate').style.display = 'block';
+            document.getElementById('price-value').textContent = price.toLocaleString();
+        }
+    }
+    
+    // Add event listeners for price estimation
+    document.getElementById('start').addEventListener('change', updatePriceEstimate);
+    document.getElementById('dest').addEventListener('change', updatePriceEstimate);
+    
+    // Show truck details
+    function showTruckDetails(truckId) {
+        // In production, this would be an AJAX call to get truck details
+        var truck = trucks.find(t => t.id === truckId);
+        if (truck) {
+            var content = `
+                <div>
+                    <p><strong>ป้ายทะเบียน:</strong> ${truck.plate}</p>
+                    <p><strong>ประเภทรถ:</strong> ${truck.truck_type}</p>
+                    <p><strong>คนขับ:</strong> ${truck.user.name || truck.user.email}</p>
+                    <p><strong>เส้นทาง:</strong> ${truck.start} → ${truck.dest}</p>
+                    <p><strong>วันที่ว่าง:</strong> ${truck.return_date}</p>
+                    <p><strong>ราคา:</strong> ${truck.price.toLocaleString()} บาท</p>
+                    <p><strong>ติดต่อ:</strong> ${truck.user.phone || 'ไม่ระบุ'}</p>
+                </div>
+            `;
+            
+            document.getElementById('truck-detail-content').innerHTML = content;
+            var modal = new bootstrap.Modal(document.getElementById('truckDetailsModal'));
+            modal.show();
+            
+            // Focus on the marker
+            if (markers[truckId]) {
+                map.setView(markers[truckId].getLatLng(), 8);
+                markers[truckId].openPopup();
+            }
+        }
+    }
+</script>
+{% endblock %}

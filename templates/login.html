@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}เข้าสู่ระบบ - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2>เข้าสู่ระบบ</h2>
+            <p>เข้าสู่ระบบเพื่อใช้งาน BackTracks</p>
+        </div>
+        <div class="auth-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">อีเมล</label>
+                    {{ form.email(class="form-control", id="email", placeholder="กรอกอีเมลของคุณ") }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">รหัสผ่าน</label>
+                    {{ form.password(class="form-control", id="password", placeholder="รหัสผ่าน") }}
+                </div>
+                
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+            
+            <div class="login-link">
+                ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สมัครสมาชิก</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

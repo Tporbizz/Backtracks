@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}BackTracks - แพลตฟอร์มจัดการรถสไลด์{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h2>BackTracks</h2>
+            <p>แพลตฟอร์มจัดการรถสไลด์ท้ายว่าง</p>
+        </div>
+        <div class="auth-body">
+            <form method="POST">
+                {{ register_form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">อีเมล</label>
+                    {{ register_form.email(class="form-control", id="email", placeholder="กรอกอีเมลของคุณ") }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
+                    {{ register_form.phone(class="form-control", id="phone", placeholder="เบอร์โทรศัพท์ 10 หลัก") }}
+                    <small class="form-text">เบอร์โทรศัพท์ 10 หลัก ไม่ต้องใส่ขีด (-)</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">ชื่อคนขับ</label>
+                    {{ register_form.name(class="form-control", id="name", placeholder="ชื่อ-นามสกุล") }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">รหัสผ่าน</label>
+                    {{ register_form.password(class="form-control", id="password", placeholder="รหัสผ่านอย่างน้อย 6 ตัว") }}
+                    <small class="form-text">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</small>
+                </div>
+                
+                {{ register_form.submit(class="btn btn-primary") }}
+            </form>
+            
+            <div class="login-link">
+                มีบัญชีแล้ว? <a href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,667 @@
+:root {
+    --primary: #0052CC;
+    --secondary: #00B8D9;
+    --success: #36B37E;
+    --warning: #FFAB00;
+    --danger: #FF5630;
+    --dark: #172B4D;
+    --gray: #6B778C;
+    --light-gray: #DFE1E6;
+    --white: #FFFFFF;
+    --map-bg: #F2F7FF;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: var(--dark);
+    min-height: 100vh;
+    position: relative;
+    padding-bottom: 70px; /* เพื่อให้มีพื้นที่สำหรับ tab bar ด้านล่าง */
+}
+
+.mobile-header {
+    background-color: var(--primary);
+    padding: 10px 0;
+    color: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-logo {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--white);
+    text-decoration: none;
+}
+
+.btn-logout {
+    color: var(--white);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.main-container {
+    padding: 15px;
+    max-width: 100%;
+}
+
+/* Mobile Tab Bar */
+.mobile-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    border-top: 1px solid var(--light-gray);
+    z-index: 1000;
+}
+
+.tab-item {
+    text-decoration: none;
+    color: var(--gray);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+}
+
+.tab-item.active {
+    color: var(--primary);
+}
+
+.tab-icon {
+    font-size: 18px;
+    margin-bottom: 3px;
+}
+
+.tab-add-button {
+    width: 48px;
+    height: 48px;
+    background-color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 24px;
+    text-decoration: none;
+    margin-top: -20px;
+}
+
+.add-icon {
+    line-height: 1;
+}
+
+/* Form Styles */
+.auth-container {
+    max-width: 500px;
+    margin: 20px auto;
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.auth-header {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 20px;
+    text-align: center;
+}
+
+.auth-header h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.auth-header p {
+    margin: 5px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.auth-body {
+    padding: 20px;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--dark);
+    background-color: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.form-control:focus {
+    border-color: var(--secondary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 184, 217, 0.25);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.form-text {
+    display: block;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    color: var(--gray);
+    font-size: 12px;
+}
+
+.btn-primary {
+    display: inline-block;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    border: 1px solid transparent;
+    padding: 12px 20px;
+    font-size: 16px;
+    line-height: 1.5;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: var(--white);
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: #0047B3;
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.login-link a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* Map Styles */
+.map-container {
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+/* Truck Card Styles */
+.truck-list {
+    margin-top: 20px;
+}
+
+.truck-card {
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--success);
+}
+
+.truck-card.unavailable {
+    border-left-color: var(--danger);
+    opacity: 0.7;
+}
+
+.truck-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.truck-route {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--dark);
+}
+
+.truck-price {
+    font-weight: 700;
+    color: var(--success);
+    font-size: 16px;
+}
+
+.truck-card.unavailable .truck-price {
+    color: var(--danger);
+}
+
+.truck-details {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 10px;
+}
+
+.truck-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+/* Search Form Styles */
+.search-bar {
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filter-toggle {
+    background-color: transparent;
+    border: none;
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 14px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.filter-container {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--light-gray);
+}
+
+.filter-container.show {
+    display: block;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}:root {
+    --primary: #0052CC;
+    --secondary: #00B8D9;
+    --success: #36B37E;
+    --warning: #FFAB00;
+    --danger: #FF5630;
+    --dark: #172B4D;
+    --gray: #6B778C;
+    --light-gray: #DFE1E6;
+    --white: #FFFFFF;
+    --map-bg: #F2F7FF;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: var(--dark);
+    min-height: 100vh;
+    position: relative;
+    padding-bottom: 70px; /* เพื่อให้มีพื้นที่สำหรับ tab bar ด้านล่าง */
+}
+
+.mobile-header {
+    background-color: var(--primary);
+    padding: 10px 0;
+    color: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-logo {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--white);
+    text-decoration: none;
+}
+
+.btn-logout {
+    color: var(--white);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.main-container {
+    padding: 15px;
+    max-width: 100%;
+}
+
+/* Mobile Tab Bar */
+.mobile-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    border-top: 1px solid var(--light-gray);
+    z-index: 1000;
+}
+
+.tab-item {
+    text-decoration: none;
+    color: var(--gray);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+}
+
+.tab-item.active {
+    color: var(--primary);
+}
+
+.tab-icon {
+    font-size: 18px;
+    margin-bottom: 3px;
+}
+
+.tab-add-button {
+    width: 48px;
+    height: 48px;
+    background-color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 24px;
+    text-decoration: none;
+    margin-top: -20px;
+}
+
+.add-icon {
+    line-height: 1;
+}
+
+/* Form Styles */
+.auth-container {
+    max-width: 500px;
+    margin: 20px auto;
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.auth-header {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 20px;
+    text-align: center;
+}
+
+.auth-header h2 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 22px;
+}
+
+.auth-header p {
+    margin: 5px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.auth-body {
+    padding: 20px;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--dark);
+    background-color: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.form-control:focus {
+    border-color: var(--secondary);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 184, 217, 0.25);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--dark);
+}
+
+.form-text {
+    display: block;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    color: var(--gray);
+    font-size: 12px;
+}
+
+.btn-primary {
+    display: inline-block;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    border: 1px solid transparent;
+    padding: 12px 20px;
+    font-size: 16px;
+    line-height: 1.5;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: var(--white);
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: #0047B3;
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.login-link a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+/* Map Styles */
+.map-container {
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+/* Truck Card Styles */
+.truck-list {
+    margin-top: 20px;
+}
+
+.truck-card {
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid var(--success);
+}
+
+.truck-card.unavailable {
+    border-left-color: var(--danger);
+    opacity: 0.7;
+}
+
+.truck-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.truck-route {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--dark);
+}
+
+.truck-price {
+    font-weight: 700;
+    color: var(--success);
+    font-size: 16px;
+}
+
+.truck-card.unavailable .truck-price {
+    color: var(--danger);
+}
+
+.truck-details {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 10px;
+}
+
+.truck-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+/* Search Form Styles */
+.search-bar {
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.filter-toggle {
+    background-color: transparent;
+    border: none;
+    color: var(--primary);
+    font-weight: 500;
+    font-size: 14px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.filter-container {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--light-gray);
+}
+
+.filter-container.show {
+    display: block;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}

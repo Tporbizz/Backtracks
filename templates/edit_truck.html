@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}แก้ไขข้อมูลรถ - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline me-3">
+            <span>←</span>
+        </a>
+        <h1 class="h4 mb-0">แก้ไขข้อมูลรถ</h1>
+    </div>
+    
+    <div class="auth-container">
+        <div class="auth-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="plate" class="form-label">ป้ายทะเบียน</label>
+                    {{ form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="truck_type" class="form-label">ประเภทรถ</label>
+                    {{ form.truck_type(class="form-control", id="truck_type") }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="start" class="form-label">จุดเริ่มต้น</label>
+                            {{ form.start(class="form-control", id="start") }}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="dest" class="form-label">จุดหมายปลายทาง</label>
+                            {{ form.dest(class="form-control", id="dest") }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="return_date" class="form-label">วันที่ว่าง</label>
+                    {{ form.return_date(class="form-control", id="return_date") }}
+                </div>
+                
+                <div id="price-estimate" class="alert alert-info mb-3">
+                    <strong>ประมาณการราคา:</strong> <span id="price-value">{{ "{:,}".format(truck.price) }}</span> บาท
+                    <div><small>คำนวณจากระยะทาง × 12 บาท/กม. ปัดเป็นหลัก 500</small></div>
+                </div>
+                
+                {{ form.submit(class="btn btn-primary", value="บันทึกการแก้ไข") }}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize date picker
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners for price estimation
+        document.getElementById('start').addEventListener('change', updatePriceEstimate);
+        document.getElementById('dest').addEventListener('change', updatePriceEstimate);
+    });
+    
+    // Price estimation function (same as on dashboard)
+    function updatePriceEstimate() {
+        var start = document.getElementById('start').value;
+        var dest = document.getElementById('dest').value;
+        
+        if (start && dest) {
+            // This would be replaced with actual API call in production
+            var distance = Math.floor(Math.random() * 1500) + 500;
+            var price = Math.floor(distance * 12);
+            // ปัดเป็นหลัก 500
+            price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
+            
+            document.getElementById('price-value').textContent = price.toLocaleString();
+        }
+    }
+</script>
+{% endblock %}
