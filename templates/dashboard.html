@@ -13,7 +13,7 @@
     
     <!-- Search Bar -->
     <div class="search-bar">
-        <form method="POST" name="search">
+        <form method="POST" name="search_form">
             {{ search_form.hidden_tag() }}
             <div class="d-flex align-items-center">
                 {{ search_form.start_province(class="form-control", placeholder="เลือกจังหวัด") }}
@@ -40,7 +40,7 @@
             </h2>
             <div id="collapseForm" class="accordion-collapse collapse" aria-labelledby="headingOne">
                 <div class="accordion-body">
-                    <form method="POST" name="truck">
+                    <form method="POST">
                         {{ truck_form.hidden_tag() }}
                         
                         <div class="mb-3">
@@ -75,7 +75,6 @@
                         
                         <div id="price-estimate" class="alert alert-info mb-3" style="display: none;">
                             <strong>ประมาณการราคา:</strong> <span id="price-value">0</span> บาท
-                            <div><small>คำนวณจากระยะทาง × 12 บาท/กม. ปัดเป็นหลัก 500</small></div>
                         </div>
                         
                         {{ truck_form.submit(class="btn btn-primary") }}
@@ -90,7 +89,7 @@
     <div class="truck-list">
         {% if trucks and trucks|length > 0 %}
             {% for truck in trucks %}
-                <div class="truck-card {% if truck.is_confirmed %}unavailable{% endif %}">
+                <div class="truck-card {% if truck.is_confirmed %}unavailable{% endif %} {% if truck.is_new %}new-job{% endif %}">
                     <div class="truck-card-header">
                         <div>
                             <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
@@ -162,11 +161,33 @@
         minZoom: 6
     }).addTo(map);
     
-    // Add markers for trucks
-    var trucks = {{ trucks|tojson|safe }};
+    // สร้างข้อมูลรถจากข้อมูลเซิร์ฟเวอร์โดยนำข้อมูลที่จำเป็นแต่ละตัวมาใช้แทนการ serialize เป็น JSON โดยตรง
+    var trucksData = [
+        {% for truck in trucks %}
+        {
+            id: {{ truck.id }},
+            plate: "{{ truck.plate }}",
+            truck_type: "{{ truck.truck_type }}",
+            start: "{{ truck.start }}",
+            dest: "{{ truck.dest }}",
+            return_date: "{{ truck.return_date }}",
+            price: {{ truck.price }},
+            lat: {{ truck.lat }},
+            lon: {{ truck.lon }},
+            is_confirmed: {{ 'true' if truck.is_confirmed else 'false' }},
+            is_new: {{ 'true' if truck.is_new else 'false' }},
+            user: {
+                email: "{{ truck.user.email }}",
+                phone: "{{ truck.user.phone if current_user.is_authenticated else '' }}",
+                name: "{{ truck.user.name }}"
+            }
+        }{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+    
     var markers = {};
     
-    trucks.forEach(function(truck) {
+    trucksData.forEach(function(truck) {
         if (truck.lat && truck.lon) {
             var markerColor = truck.is_confirmed ? '#FF5630' : '#36B37E';
             var marker = L.circleMarker([truck.lat, truck.lon], {
@@ -182,7 +203,7 @@
                 '<strong>' + truck.plate + '</strong><br>' +
                 'เส้นทาง: ' + truck.start + ' → ' + truck.dest + '<br>' +
                 'วันที่ว่าง: ' + truck.return_date + '<br>' +
-                'ราคา: ' + truck.price + ' บาท'
+                'ราคา: ' + truck.price.toLocaleString() + ' บาท'
             );
             
             markers[truck.id] = marker;
@@ -203,7 +224,7 @@
             // This would be replaced with actual API call in production
             // For demo, we'll use a random price between 5000 and 20000
             var distance = Math.floor(Math.random() * 1500) + 500;
-var price = Math.floor(distance * 12);
+            var price = Math.floor(distance * 12);
             // ปัดเป็นหลัก 500
             price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
             
@@ -219,7 +240,7 @@ var price = Math.floor(distance * 12);
     // Show truck details
     function showTruckDetails(truckId) {
         // In production, this would be an AJAX call to get truck details
-        var truck = trucks.find(t => t.id === truckId);
+        var truck = trucksData.find(t => t.id === truckId);
         if (truck) {
             var content = `
                 <div>

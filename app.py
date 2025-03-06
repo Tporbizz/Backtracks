@@ -16,17 +16,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'sage-backtracks-2025'
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'  # เมื่อไม่ login ให้กลับไปหน้า login
-
-# Branding และสี
-BRAND_NAME = "BackTracks"
-BACKGROUND_COLOR = "#1A2B42"
-HEADER_COLOR = "#363A51"
-TEXT_COLOR = "#5CC59E"
-HIGHLIGHT_COLOR = "#67F494"
-ACCENT_COLOR = "#FFFFFF"
-FONT_SIZE = "20px"
-NEW_JOB_COLOR = "#FF6B6B"  # สีแดงอ่อนสำหรับงานใหม่ (ไม่เกิน 1 วัน)
+login_manager.login_view = 'login'
 
 # ข้อมูลจังหวัดทั้งหมดของประเทศไทย
 provinces = {
@@ -69,14 +59,14 @@ class Truck(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     plate = db.Column(db.String(10), nullable=False)
-    truck_type = db.Column(db.String(20), default="รถบรรทุก", nullable=False)  # เพิ่มประเภทรถ
+    truck_type = db.Column(db.String(20), default="รถบรรทุก", nullable=False)
     start = db.Column(db.String(50), nullable=False)
     dest = db.Column(db.String(50), nullable=False)
     return_date = db.Column(db.String(20), nullable=False)
     price = db.Column(db.Integer, nullable=False)
     lat = db.Column(db.Float, nullable=False)
     lon = db.Column(db.Float, nullable=False)
-    is_confirmed = db.Column(db.Boolean, default=False)  # เพิ่มสถานะว่าง/ไม่ว่าง
+    is_confirmed = db.Column(db.Boolean, default=False)
 
 # ฟังก์ชันคำนวณระยะทาง
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -116,17 +106,28 @@ class RegisterForm(FlaskForm):
     password = PasswordField('รหัสผ่าน', validators=[DataRequired(), Length(min=6)])
     submit = SubmitField('สมัครสมาชิก')
 
+# แก้ไขตัวเลือกประเภทรถใน TruckForm และ SearchForm
 class TruckForm(FlaskForm):
     plate = StringField('ป้ายทะเบียน', validators=[DataRequired(), Length(max=10)])
     truck_type = SelectField('ประเภทรถ', choices=[
-        ('รถพ่วง/หัวลาก', 'รถพ่วง/หัวลาก'), 
-        ('รถกระบะ', 'รถกระบะ'), 
-        ('รถบรรทุก', 'รถบรรทุก')
+        ('สไลด์หัวลาก', 'สไลด์หัวลาก'), 
+        ('สไลด์กระบะ', 'สไลด์กระบะ'), 
+        ('สไลด์ 2 ชั้น', 'สไลด์ 2 ชั้น')
     ], validators=[DataRequired()])
     start = SelectField('จุดเริ่มต้น', choices=[(p, p) for p in provinces.keys()], validators=[DataRequired()])
     dest = SelectField('จุดหมายปลายทาง', choices=[(p, p) for p in provinces.keys()], validators=[DataRequired()])
     return_date = DateField('วันที่ว่างกลับ', format='%Y-%m-%d', validators=[DataRequired()])
     submit = SubmitField('ลงทะเบียนรับงาน')
+
+class SearchForm(FlaskForm):
+    start_province = SelectField('จังหวัดต้นทาง', choices=[('', 'เลือกจังหวัด')] + [(p, p) for p in provinces.keys()])
+    truck_type = SelectField('ประเภทรถ', choices=[
+        ('', 'ทุกประเภท'),
+        ('สไลด์หัวลาก', 'สไลด์หัวลาก'), 
+        ('สไลด์กระบะ', 'สไลด์กระบะ'), 
+        ('สไลด์ 2 ชั้น', 'สไลด์ 2 ชั้น')
+    ])
+    submit = SubmitField('ค้นหา')
 
 class SearchForm(FlaskForm):
     start_province = SelectField('จังหวัดต้นทาง', choices=[('', 'เลือกจังหวัด')] + [(p, p) for p in provinces.keys()])
@@ -138,44 +139,15 @@ class SearchForm(FlaskForm):
     ])
     submit = SubmitField('ค้นหา')
 
-
+# สร้างฐานข้อมูลและข้อมูลตัวอย่าง
 with app.app_context():
-    db.create_all()    
+    db.create_all()
+    
     if not User.query.filter_by(email="support@backtracks.com").first():
         bot_user = User(email="support@backtracks.com", phone="0812345678", name="BackTracks Bot", password="sage123456")
         db.session.add(bot_user)
         db.session.commit()
 
-        # เพิ่มข้อมูลตัวอย่าง
-        truck_types = ['รถพ่วง/หัวลาก', 'รถกระบะ', 'รถบรรทุก']
-        
-        for _ in range(10):
-            plate = generate_random_plate()
-            truck_type = random.choice(truck_types)
-            start = random.choice(list(provinces.keys()))
-            dest = "กรุงเทพมหานคร"
-            return_date = (datetime.now() + timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
-            lat, lon = provinces[start]
-            dest_lat, dest_lon = provinces[dest]
-            distance = calculate_distance(lat, lon, dest_lat, dest_lon)
-            price = int(distance * 12)
-            price = (price // 500) * 500 if price % 500 < 250 else ((price // 500) + 1) * 500
-            truck = Truck(
-                user_id=bot_user.id, 
-                plate=plate, 
-                truck_type=truck_type,
-                start=start, 
-                dest=dest,
-                return_date=return_date, 
-                price=price, 
-                lat=lat, 
-                lon=lon, 
-                is_confirmed=False
-            )
-            db.session.add(truck)
-        db.session.commit()
-
-        # เพิ่มข้อมูลตัวอย่าง
         truck_types = ['รถพ่วง/หัวลาก', 'รถกระบะ', 'รถบรรทุก']
         
         for _ in range(10):
@@ -224,10 +196,7 @@ def home():
             flash("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success")
             return redirect(url_for("login"))
 
-    return render_template("index.html", register_form=register_form, contact_phone=contact_phone,
-                           brand_name=BRAND_NAME, background_color=BACKGROUND_COLOR,
-                           header_color=HEADER_COLOR, text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
+    return render_template("index.html", register_form=register_form, contact_phone=contact_phone)
 
 # เส้นทางสมัครสมาชิก (สำหรับลิงก์ใน login)
 @app.route("/register", methods=["GET", "POST"])
@@ -249,10 +218,7 @@ def register():
             flash("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success")
             return redirect(url_for("login"))
 
-    return render_template("index.html", register_form=register_form, contact_phone=contact_phone,
-                           brand_name=BRAND_NAME, background_color=BACKGROUND_COLOR,
-                           header_color=HEADER_COLOR, text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
+    return render_template("index.html", register_form=register_form, contact_phone=contact_phone)
 
 # เส้นทางล็อกอิน
 @app.route("/login", methods=["GET", "POST"])
@@ -266,10 +232,7 @@ def login():
             flash("เข้าสู่ระบบสำเร็จ!", "success")
             return redirect(url_for("dashboard"))
         flash("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "error")
-    return render_template("login.html", form=form, contact_phone=contact_phone, brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
+    return render_template("login.html", form=form, contact_phone=contact_phone)
 
 # เส้นทางแดชบอร์ด (หลัง login)
 @app.route("/dashboard", methods=["GET", "POST"])
@@ -280,7 +243,7 @@ def dashboard():
     search_form = SearchForm()
     contact_phone = "08-123-45678"
 
-    if truck_form.validate_on_submit() and "truck" in request.form:
+    if request.method == "POST" and "truck_submit" in request.form:  # เปลี่ยนชื่อตัวแปรที่ตรวจสอบ
         plate = truck_form.plate.data
         truck_type = truck_form.truck_type.data
         start = truck_form.start.data
@@ -320,15 +283,96 @@ def dashboard():
                 filtered_trucks = [t for t in filtered_trucks if t.truck_type == truck_type]
             trucks = filtered_trucks
 
-    # ตรวจสอบสถานะงานและงานใหม่
     for truck in trucks:
         truck.is_new = is_new_job(truck.return_date)
 
-    return render_template("dashboard.html", truck_form=truck_form, search_form=search_form, trucks=trucks,
-                           provinces=provinces, contact_phone=contact_phone, brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
+    return render_template("dashboard.html", truck_form=truck_form, search_form=search_form, trucks=trucks, provinces=provinces, contact_phone=contact_phone)
+
+# เส้นทางสำหรับค้นหา
+@app.route("/search", methods=["GET", "POST"])
+@login_required
+def search():
+    search_form = SearchForm()
+    # เรียงลำดับให้งานใหม่แสดงก่อน
+    trucks = Truck.query.order_by(Truck.id.desc()).all() or []
+    
+    if search_form.validate_on_submit():
+        start_province = search_form.start_province.data
+        truck_type = search_form.truck_type.data
+        
+        filtered_trucks = trucks
+        
+        if start_province:
+            filtered_trucks = [t for t in filtered_trucks if t.start == start_province]
+        
+        if truck_type:
+            filtered_trucks = [t for t in filtered_trucks if t.truck_type == truck_type]
+        
+        trucks = filtered_trucks
+    
+    # ตรวจสอบสถานะงานและงานใหม่
+    for truck in trucks:
+        truck.is_new = is_new_job(truck.return_date)
+        
+    return render_template("search.html", search_form=search_form, trucks=trucks, provinces=provinces)
+# เส้นทางสำหรับเพิ่มรถ
+# เส้นทางสำหรับเพิ่มรถ
+@app.route("/add_truck", methods=["GET", "POST"])
+@login_required
+def add_truck():
+    truck_form = TruckForm()
+    
+    if request.method == "POST" and "truck_submit" in request.form:
+        if truck_form.validate_on_submit():
+            plate = truck_form.plate.data
+            truck_type = truck_form.truck_type.data
+            start = truck_form.start.data
+            dest = truck_form.dest.data
+            return_date = truck_form.return_date.data.strftime("%Y-%m-%d")
+            lat, lon = provinces[start]
+            dest_lat, dest_lon = provinces[dest]
+            distance = calculate_distance(lat, lon, dest_lat, dest_lon)
+            price = int(distance * 12)
+            price = (price // 500) * 500 if price % 500 < 250 else ((price // 500) + 1) * 500
+            truck = Truck(
+                user_id=current_user.id, 
+                plate=plate, 
+                truck_type=truck_type,
+                start=start, 
+                dest=dest,
+                return_date=return_date, 
+                price=price, 
+                lat=lat, 
+                lon=lon, 
+                is_confirmed=False
+            )
+            db.session.add(truck)
+            db.session.commit()
+            flash("ลงข้อมูลรถสำเร็จ!", "success")
+            return redirect(url_for("dashboard"))
+        else:
+            for field, errors in truck_form.errors.items():
+                for error in errors:
+                    flash(f"ข้อผิดพลาด: {getattr(truck_form, field).label.text} - {error}", "error")
+        
+    return render_template("add_truck.html", truck_form=truck_form, provinces=provinces)
+
+# เส้นทางสำหรับงานของฉัน
+@app.route("/my_jobs")
+@login_required
+def my_jobs():
+    my_trucks = Truck.query.filter_by(user_id=current_user.id).order_by(Truck.id.desc()).all() or []
+    
+    for truck in my_trucks:
+        truck.is_new = is_new_job(truck.return_date)
+        
+    return render_template("my_jobs.html", trucks=my_trucks, provinces=provinces)
+
+# เส้นทางสำหรับโปรไฟล์
+@app.route("/profile")
+@login_required
+def profile():
+    return render_template("profile.html", user=current_user)
 
 # API ดึงข้อมูลรถ
 @app.route("/trucks")
@@ -348,14 +392,12 @@ def get_trucks():
 def get_route(truck_id):
     truck = Truck.query.get_or_404(truck_id)
     
-    # คำนวณเวลาเดินทางประมาณ (โดยเฉลี่ยรถบรรทุกวิ่ง 60 กม/ชม)
-    avg_speed = 60  # km/h
+    avg_speed = 60
     start_lat, start_lon = provinces[truck.start]
     dest_lat, dest_lon = provinces[truck.dest]
     distance = calculate_distance(start_lat, start_lon, dest_lat, dest_lon)
     travel_time_hours = distance / avg_speed
     
-    # แปลงเป็นชั่วโมงและนาที
     hours = int(travel_time_hours)
     minutes = int((travel_time_hours - hours) * 60)
     
@@ -424,106 +466,13 @@ def edit_truck(truck_id):
         distance = calculate_distance(truck.lat, truck.lon, dest_lat, dest_lon)
         truck.price = int(distance * 12)
         truck.price = (truck.price // 500) * 500 if truck.price % 500 < 250 else ((truck.price // 500) + 1) * 500
-        truck.is_confirmed = False  # รีเซ็ตสถานะเมื่อแก้ไข
+        truck.is_confirmed = False
         db.session.commit()
         flash("แก้ไขข้อมูลรถสำเร็จ!", "success")
         return redirect(url_for("dashboard"))
-# เส้นทางสำหรับค้นหา
-@app.route("/search", methods=["GET", "POST"])
-@login_required
-def search():
-    search_form = SearchForm()
-    trucks = Truck.query.order_by(Truck.id.desc()).all() or []
-    
-    if search_form.validate_on_submit():
-        start_province = search_form.start_province.data
-        truck_type = search_form.truck_type.data
-        
-        if start_province or truck_type:
-            if start_province:
-                trucks = [t for t in trucks if t.start == start_province]
-            if truck_type:
-                trucks = [t for t in trucks if t.truck_type == truck_type]
-    
-    # ตรวจสอบสถานะงานและงานใหม่
-    for truck in trucks:
-        truck.is_new = is_new_job(truck.return_date)
-        
-    return render_template("search.html", search_form=search_form, trucks=trucks,
-                           provinces=provinces) contact_phone="08-123-45678", brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
 
-# เส้นทางสำหรับเพิ่มรถ
-@app.route("/add_truck", methods=["GET", "POST"])
-@login_required
-def add_truck():
-    truck_form = TruckForm()
-    
-    if truck_form.validate_on_submit():
-        plate = truck_form.plate.data
-        truck_type = truck_form.truck_type.data
-        start = truck_form.start.data
-        dest = truck_form.dest.data
-        return_date = truck_form.return_date.data.strftime("%Y-%m-%d")
-        lat, lon = provinces[start]
-        dest_lat, dest_lon = provinces[dest]
-        distance = calculate_distance(lat, lon, dest_lat, dest_lon)
-        price = int(distance * 12)
-        price = (price // 500) * 500 if price % 500 < 250 else ((price // 500) + 1) * 500
-        truck = Truck(
-            user_id=current_user.id, 
-            plate=plate, 
-            truck_type=truck_type,
-            start=start, 
-            dest=dest,
-            return_date=return_date, 
-            price=price, 
-            lat=lat, 
-            lon=lon, 
-            is_confirmed=False
-        )
-        db.session.add(truck)
-        db.session.commit()
-        flash("ลงข้อมูลรถสำเร็จ!", "success")
-        return redirect(url_for("dashboard"))
-        
-    return render_template("add_truck.html", truck_form=truck_form, provinces=provinces)contact_phone="08-123-45678", brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
+    return render_template("edit_truck.html", form=form, truck=truck, provinces=provinces)
 
-# เส้นทางสำหรับงานของฉัน
-@app.route("/my_jobs")
-@login_required
-def my_jobs():
-    my_trucks = Truck.query.filter_by(user_id=current_user.id).order_by(Truck.id.desc()).all() or []
-    
-    # ตรวจสอบสถานะงานและงานใหม่
-    for truck in my_trucks:
-        truck.is_new = is_new_job(truck.return_date)
-        
-    return render_template("my_jobs.html", trucks=my_trucks, provinces=provinces)contact_phone="08-123-45678", brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
-
-# เส้นทางสำหรับโปรไฟล์
-@app.route("/profile")
-@login_required
-def profile():
-    return render_template("profile.html", user=current_user)
-                           contact_phone="08-123-45678", brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
-
-    return render_template("edit_truck.html", form=form, truck=truck, provinces=provinces,
-                           contact_phone=contact_phone, brand_name=BRAND_NAME,
-                           background_color=BACKGROUND_COLOR, header_color=HEADER_COLOR,
-                           text_color=TEXT_COLOR, highlight_color=HIGHLIGHT_COLOR,
-                           accent_color=ACCENT_COLOR, font_size=FONT_SIZE, new_job_color=NEW_JOB_COLOR)
-
+# รันแอป
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)

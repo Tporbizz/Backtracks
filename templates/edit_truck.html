@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container">
     <div class="d-flex align-items-center mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline me-3">
+        <a href="{{ url_for('dashboard') }}" class="btn-back me-3">
             <span>←</span>
         </a>
         <h1 class="h4 mb-0">แก้ไขข้อมูลรถ</h1>
@@ -48,7 +48,6 @@
                 
                 <div id="price-estimate" class="alert alert-info mb-3">
                     <strong>ประมาณการราคา:</strong> <span id="price-value">{{ "{:,}".format(truck.price) }}</span> บาท
-                    <div><small>คำนวณจากระยะทาง × 12 บาท/กม. ปัดเป็นหลัก 500</small></div>
                 </div>
                 
                 {{ form.submit(class="btn btn-primary", value="บันทึกการแก้ไข") }}

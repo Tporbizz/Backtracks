@@ -10,23 +10,23 @@
         <div class="profile-header">
             <div class="profile-avatar">
                 <div class="avatar-circle">
-                    <span>{{ current_user.name[0] | upper }}</span>
+                    <span>{{ user.name[0] | upper }}</span>
                 </div>
             </div>
             <div class="profile-info">
-                <h2>{{ current_user.name }}</h2>
-                <p>{{ current_user.email }}</p>
-                <p>{{ current_user.phone }}</p>
+                <h2>{{ user.name }}</h2>
+                <p>{{ user.email }}</p>
+                <p>{{ user.phone }}</p>
             </div>
         </div>
         
         <div class="profile-stats">
             <div class="stat-item">
-                <span class="stat-value">{{ current_user.trucks|length }}</span>
+                <span class="stat-value">{{ user.trucks|length }}</span>
                 <span class="stat-label">รถทั้งหมด</span>
             </div>
             <div class="stat-item">
-                <span class="stat-value">{{ current_user.trucks|selectattr('is_confirmed', 'eq', true)|list|length }}</span>
+                <span class="stat-value">{{ user.trucks|selectattr('is_confirmed', 'eq', true)|list|length }}</span>
                 <span class="stat-label">รถที่จองแล้ว</span>
             </div>
             <div class="stat-item">
@@ -48,7 +48,7 @@
         <div class="referral-code mt-3">
             <p class="referral-label">รหัสแนะนำของคุณ:</p>
             <div class="referral-box">
-                <span class="referral-text">BT{{ current_user.id }}{{ current_user.name|truncate(2, True, '') }}</span>
+                <span class="referral-text">BT{{ user.id }}{{ user.name|truncate(2, True, '') }}</span>
                 <button class="referral-copy" onclick="copyReferralCode()">คัดลอก</button>
             </div>
         </div>

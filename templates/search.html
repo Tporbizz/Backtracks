@@ -106,11 +106,33 @@
         minZoom: 6
     }).addTo(map);
     
-    // Add markers for trucks
-    var trucks = {{ trucks|tojson|safe }};
+    // สร้างข้อมูลรถจากข้อมูลเซิร์ฟเวอร์โดยนำข้อมูลที่จำเป็นแต่ละตัวมาใช้แทนการ serialize เป็น JSON โดยตรง
+    var trucksData = [
+        {% for truck in trucks %}
+        {
+            id: {{ truck.id }},
+            plate: "{{ truck.plate }}",
+            truck_type: "{{ truck.truck_type }}",
+            start: "{{ truck.start }}",
+            dest: "{{ truck.dest }}",
+            return_date: "{{ truck.return_date }}",
+            price: {{ truck.price }},
+            lat: {{ truck.lat }},
+            lon: {{ truck.lon }},
+            is_confirmed: {{ 'true' if truck.is_confirmed else 'false' }},
+            is_new: {{ 'true' if truck.is_new else 'false' }},
+            user: {
+                email: "{{ truck.user.email }}",
+                phone: "{{ truck.user.phone if current_user.is_authenticated else '' }}",
+                name: "{{ truck.user.name }}"
+            }
+        }{{ ',' if not loop.last }}
+        {% endfor %}
+    ];
+    
     var markers = {};
     
-    trucks.forEach(function(truck) {
+    trucksData.forEach(function(truck) {
         if (truck.lat && truck.lon) {
             var markerColor = truck.is_confirmed ? '#FF5630' : '#36B37E';
             var marker = L.circleMarker([truck.lat, truck.lon], {
@@ -142,7 +164,7 @@
     }
     
     function showTruckDetails(truckId) {
-        var truck = trucks.find(t => t.id === truckId);
+        var truck = trucksData.find(t => t.id === truckId);
         if (truck) {
             // ราคาสำหรับผู้ใช้ทั่วไป (บวก 20%)
             var price = truck.price;
@@ -150,7 +172,8 @@
             
             // ถ้าเป็นคนขับที่เป็นเจ้าของ จะเห็นราคาปกติ
             {% if current_user.trucks %}
-                isOwner = {{ current_user.trucks|map(attribute='id')|list|tojson }}.includes(truckId);
+                var userTruckIds = [{% for t in current_user.trucks %}{{ t.id }}{% if not loop.last %},{% endif %}{% endfor %}];
+                isOwner = userTruckIds.includes(truckId);
             {% endif %}
             
             if (!isOwner) {
