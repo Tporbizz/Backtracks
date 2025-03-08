@@ -700,27 +700,11 @@ def change_password():
     return render_template("change_password.html", form=form)
 
 # เส้นทางสำหรับแจ้งเตือน
-@app.route("/notifications/read/<int:notification_id>")
+@app.route("/notifications")
 @login_required
-def read_notification(notification_id):
-    notification = Notification.query.get_or_404(notification_id)
-    
-    if notification.user_id != current_user.id:
-        abort(403)
-    
-    notification.is_read = True
-    db.session.commit()
-    
-    # ถ้ามี truck_id ให้ redirect ไปที่ truck นั้น แต่ต้องตรวจสอบว่า truck ยังมีอยู่หรือไม่
-    if notification.truck_id:
-        truck = Truck.query.get(notification.truck_id)
-        if truck:
-            return redirect(url_for("truck_detail", truck_id=notification.truck_id))
-        else:
-            flash("ไม่พบข้อมูลรถที่ต้องการ อาจถูกลบไปแล้ว", "error")
-            return redirect(url_for("notifications"))
-    
-    return redirect(url_for("notifications"))
+def notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    return render_template("notifications.html", notifications=notifications)
 
 # API ดึงข้อมูลรถ
 @app.route("/trucks")
@@ -1185,21 +1169,15 @@ def admin_delete_truck(truck_id):
 
 @app.route("/setup_admin")
 def setup_admin():
-    with app.app_context():
-        try:
-            admin = User.query.filter_by(email="admin@backtracks.com").first()
-            if not admin:
-                admin_user = User(email="admin@backtracks.com", phone="0812345678", 
-                                name="BackTracks Admin", password="admin123456", is_admin=True)
-                db.session.add(admin_user)
-                db.session.commit()
-                return "เพิ่มผู้ดูแลระบบสำเร็จ!"
-            else:
-                admin.is_admin = True
-                db.session.commit()
-                return "อัปเดตสถานะผู้ดูแลระบบสำเร็จ!"
-        except Exception as e:
-            return f"เกิดข้อผิดพลาด: {str(e)}"
+    admin = User.query.filter_by(email="admin@backtracks.com").first()
+    if not admin:
+        admin_user = User(email="admin@backtracks.com", phone="0812345678", 
+                         name="BackTracks Admin", password="admin123456", is_admin=True)
+        db.session.add(admin_user)
+    else:
+        admin.is_admin = True
+    db.session.commit()
+    return "ตั้งค่าผู้ดูแลระบบสำเร็จ!"
 # รันแอป
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)
