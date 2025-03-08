@@ -5,81 +5,510 @@
 {% block content %}
 <div class="container">
     <div class="d-flex align-items-center mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn-back me-3">
-            <span>←</span>
+        <a href="{{ url_for('my_jobs') }}" class="btn-back me-3">
+            <i class="bi bi-arrow-left"></i>
         </a>
         <h1 class="h4 mb-0">แก้ไขข้อมูลรถ</h1>
     </div>
     
     <div class="auth-container">
         <div class="auth-body">
-            <form method="POST">
+            <form method="POST" id="editTruckForm">
                 {{ form.hidden_tag() }}
                 
                 <div class="mb-3">
                     <label for="plate" class="form-label">ป้ายทะเบียน</label>
-                    {{ form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                    <div class="input-group">
+                        <span class="input-group-text icon-container"><i class="bi bi-truck"></i></span>
+                        {{ form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                    </div>
                 </div>
                 
                 <div class="mb-3">
                     <label for="truck_type" class="form-label">ประเภทรถ</label>
-                    {{ form.truck_type(class="form-control", id="truck_type") }}
+                    <div class="input-group">
+                        <span class="input-group-text icon-container"><i class="bi bi-boxes"></i></span>
+                        {{ form.truck_type(class="form-control", id="truck_type") }}
+                    </div>
                 </div>
                 
                 <div class="row">
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="start" class="form-label">จุดเริ่มต้น</label>
-                            {{ form.start(class="form-control", id="start") }}
+                            <div class="input-group">
+                                <span class="input-group-text icon-container"><i class="bi bi-geo-alt"></i></span>
+                                {{ form.start(class="form-control", id="start", onchange="checkBkkAndUpdateRoute()") }}
+                            </div>
+                        </div>
+                        
+                        <!-- เลือกเขตสำหรับจุดเริ่มต้น กรณีเป็นกรุงเทพฯ -->
+                        <div id="start_district_container" class="mb-3" style="display: none;">
+                            <label for="start_district" class="form-label">เขตในกรุงเทพฯ</label>
+                            <div class="input-group">
+                                <span class="input-group-text icon-container"><i class="bi bi-geo-fill"></i></span>
+                                <select class="form-control" id="start_district" name="start_district">
+                                    <option value="">-- เลือกเขต --</option>
+                                    <!-- ตัวเลือกเขตจะถูกเพิ่มด้วย JavaScript -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="mb-3">
                             <label for="dest" class="form-label">จุดหมายปลายทาง</label>
-                            {{ form.dest(class="form-control", id="dest") }}
+                            <div class="input-group">
+                                <span class="input-group-text icon-container"><i class="bi bi-geo-alt-fill"></i></span>
+                                {{ form.dest(class="form-control", id="dest", onchange="checkBkkAndUpdateRoute()") }}
+                            </div>
+                        </div>
+                        
+                        <!-- เลือกเขตสำหรับจุดหมายปลายทาง กรณีเป็นกรุงเทพฯ -->
+                        <div id="dest_district_container" class="mb-3" style="display: none;">
+                            <label for="dest_district" class="form-label">เขตในกรุงเทพฯ</label>
+                            <div class="input-group">
+                                <span class="input-group-text icon-container"><i class="bi bi-geo-fill"></i></span>
+                                <select class="form-control" id="dest_district" name="dest_district">
+                                    <option value="">-- เลือกเขต --</option>
+                                    <!-- ตัวเลือกเขตจะถูกเพิ่มด้วย JavaScript -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="mb-3">
                     <label for="return_date" class="form-label">วันที่ว่าง</label>
-                    {{ form.return_date(class="form-control", id="return_date") }}
+                    <div class="input-group">
+                        <span class="input-group-text icon-container"><i class="bi bi-calendar3"></i></span>
+                        {{ form.return_date(class="form-control", id="return_date") }}
+                    </div>
                 </div>
                 
-                <div id="price-estimate" class="alert alert-info mb-3">
-                    <strong>ประมาณการราคา:</strong> <span id="price-value">{{ "{:,}".format(truck.price) }}</span> บาท
+                <div id="price-estimate" class="price-card mb-4">
+                    <div class="price-content">
+                        <div class="price-icon">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <div class="price-info">
+                            <div class="price-label">ประมาณการราคา</div>
+                            <div class="price-value"><span id="price-value">{{ "{:,}".format(truck.price) }}</span> บาท</div>
+                            <div id="special-zone-notice" class="special-zone-notice" style="display: none;">
+                                <i class="bi bi-info-circle"></i> ราคาพิเศษในเขตกรุงเทพฯ (25 บาท/กม.)
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                {{ form.submit(class="btn btn-primary", value="บันทึกการแก้ไข") }}
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('my_jobs') }}" class="btn btn-outline">
+                        <i class="bi bi-x me-2"></i>ยกเลิก
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>บันทึกการแก้ไข
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    // Initialize date picker
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add event listeners for price estimation
-        document.getElementById('start').addEventListener('change', updatePriceEstimate);
-        document.getElementById('dest').addEventListener('change', updatePriceEstimate);
-    });
+{% block styles %}
+<style>
+    .btn-back {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-dark);
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-right: 15px;
+    }
     
-    // Price estimation function (same as on dashboard)
-    function updatePriceEstimate() {
-        var start = document.getElementById('start').value;
-        var dest = document.getElementById('dest').value;
+    .btn-back:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .auth-container {
+        background-color: #FFFFFF;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        width: 100%;
+        margin-bottom: 2rem;
+    }
+    
+    .auth-body {
+        padding: 1.5rem;
+    }
+    
+    .icon-container {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-color: #DFE1E6;
+        width: 45px;
+        height: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .icon-container i {
+        font-size: 18px;
+    }
+    
+    .form-control {
+        height: 45px;
+        font-size: 15px;
+        border-color: #DFE1E6;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 15px;
+    }
+    
+    .price-card {
+        background: linear-gradient(135deg, #0052CC, #003E99);
+        border-radius: var(--rounded-md);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .price-content {
+        display: flex;
+        align-items: center;
+    }
+    
+    .price-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 22px;
+    }
+    
+    .price-info {
+        flex: 1;
+    }
+    
+    .price-label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .price-value {
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+    }
+    
+    .special-zone-notice {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .special-zone-notice i {
+        margin-right: 5px;
+    }
+    
+    .btn {
+        padding: 0.5rem 1.5rem;
+        border-radius: var(--rounded-sm);
+        font-weight: 500;
+        min-width: 120px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 45px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #0052CC, #003E99);
+        border: none;
+        box-shadow: 0 4px 10px rgba(0, 82, 204, 0.25);
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #003E99, #0052CC);
+        box-shadow: 0 6px 15px rgba(0, 82, 204, 0.35);
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline {
+        border: 1px solid #DFE1E6;
+        color: var(--text-dark);
+        background-color: white;
+    }
+    
+    .btn-outline:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background-color: var(--primary-light);
+    }
+    
+    @media (max-width: 576px) {
+        .auth-body {
+            padding: 1rem;
+        }
         
-        if (start && dest) {
-            // This would be replaced with actual API call in production
-            var distance = Math.floor(Math.random() * 1500) + 500;
-            var price = Math.floor(distance * 12);
-            // ปัดเป็นหลัก 500
-            price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
-            
-            document.getElementById('price-value').textContent = price.toLocaleString();
+        .d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .btn {
+            width: 100%;
         }
     }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // เขตในกรุงเทพฯ
+    const bkkDistricts = [
+        "เขตพระนคร", "เขตดุสิต", "เขตหนองจอก", "เขตบางรัก", "เขตบางเขน", 
+        "เขตบางกะปิ", "เขตปทุมวัน", "เขตป้อมปราบศัตรูพ่าย", "เขตพระโขนง", 
+        "เขตมีนบุรี", "เขตลาดกระบัง", "เขตยานนาวา", "เขตสัมพันธวงศ์", 
+        "เขตพญาไท", "เขตธนบุรี", "เขตบางกอกใหญ่", "เขตห้วยขวาง", 
+        "เขตคลองสาน", "เขตตลิ่งชัน", "เขตบางกอกน้อย", "เขตบางขุนเทียน", 
+        "เขตภาษีเจริญ", "เขตหนองแขม", "เขตราษฎร์บูรณะ", "เขตบางพลัด", 
+        "เขตดินแดง", "เขตบึงกุ่ม", "เขตสาทร", "เขตบางซื่อ", "เขตจตุจักร", 
+        "เขตบางคอแหลม", "เขตประเวศ", "เขตคลองเตย", "เขตสวนหลวง", 
+        "เขตจอมทอง", "เขตดอนเมือง", "เขตราชเทวี", "เขตลาดพร้าว", 
+        "เขตวัฒนา", "เขตบางแค", "เขตหลักสี่", "เขตสายไหม", "เขตคันนายาว", 
+        "เขตสะพานสูง", "เขตวังทองหลาง", "เขตคลองสามวา", "เขตบางนา", 
+        "เขตทวีวัฒนา", "เขตทุ่งครุ", "เขตบางบอน"
+    ];
+    
+    // ตรวจสอบว่าเป็นพื้นที่กรุงเทพฯ
+    function isBangkokArea(location) {
+        return location === "กรุงเทพมหานคร" || location.startsWith("เขต");
+    }
+    
+    // Initialize on document ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('return_date').setAttribute('min', today);
+        
+        // Initialize district dropdowns
+        initializeDistrictDropdowns();
+        
+        // Add event listeners
+        document.getElementById('start').addEventListener('change', checkBkkAndUpdateRoute);
+        document.getElementById('dest').addEventListener('change', checkBkkAndUpdateRoute);
+        document.getElementById('start_district').addEventListener('change', updateFinalLocation);
+        document.getElementById('dest_district').addEventListener('change', updateFinalLocation);
+        
+        // Check initial values
+        checkBkkAndUpdateRoute();
+        
+        // ตรวจสอบการแสดงป้ายราคาพิเศษเส้นทางกรุงเทพฯ
+        checkSpecialZoneNotice();
+        
+        // ตั้งค่าค่าเริ่มต้นสำหรับเขตถ้าเป็นกรุงเทพฯ
+        const start = document.getElementById('start').value;
+        const dest = document.getElementById('dest').value;
+        
+        if (start === 'กรุงเทพมหานคร') {
+            document.getElementById('start_district_container').style.display = 'block';
+        } else if (start.startsWith('เขต')) {
+            document.getElementById('start').value = 'กรุงเทพมหานคร';
+            document.getElementById('start_district_container').style.display = 'block';
+            
+            // รอให้ dropdown สร้างเสร็จก่อนแล้วค่อยตั้งค่า
+            setTimeout(() => {
+                document.getElementById('start_district').value = start;
+            }, 100);
+        }
+        
+        if (dest === 'กรุงเทพมหานคร') {
+            document.getElementById('dest_district_container').style.display = 'block';
+        } else if (dest.startsWith('เขต')) {
+            document.getElementById('dest').value = 'กรุงเทพมหานคร';
+            document.getElementById('dest_district_container').style.display = 'block';
+            
+            // รอให้ dropdown สร้างเสร็จก่อนแล้วค่อยตั้งค่า
+            setTimeout(() => {
+                document.getElementById('dest_district').value = dest;
+            }, 100);
+        }
+    });
+    
+    // Initialize district dropdowns
+    function initializeDistrictDropdowns() {
+        const startDistrictSelect = document.getElementById('start_district');
+        const destDistrictSelect = document.getElementById('dest_district');
+        
+        // Clear existing options except the first one
+        startDistrictSelect.innerHTML = '<option value="">-- เลือกเขต --</option>';
+        destDistrictSelect.innerHTML = '<option value="">-- เลือกเขต --</option>';
+        
+        // Add district options
+        bkkDistricts.forEach(district => {
+            const startOption = document.createElement('option');
+            startOption.value = district;
+            startOption.textContent = district;
+            startDistrictSelect.appendChild(startOption);
+            
+            const destOption = document.createElement('option');
+            destOption.value = district;
+            destOption.textContent = district;
+            destDistrictSelect.appendChild(destOption);
+        });
+    }
+    
+    // Check if Bangkok is selected and show/hide district dropdowns
+    function checkBkkAndUpdateRoute() {
+        const start = document.getElementById('start').value;
+        const dest = document.getElementById('dest').value;
+        
+        // Check if start is Bangkok
+        if (start === 'กรุงเทพมหานคร') {
+            document.getElementById('start_district_container').style.display = 'block';
+        } else {
+            document.getElementById('start_district_container').style.display = 'none';
+        }
+        
+        // Check if destination is Bangkok
+        if (dest === 'กรุงเทพมหานคร') {
+            document.getElementById('dest_district_container').style.display = 'block';
+        } else {
+            document.getElementById('dest_district_container').style.display = 'none';
+        }
+        
+        // Update price
+        updatePriceEstimate();
+        
+        // ตรวจสอบการแสดงป้ายราคาพิเศษเส้นทางกรุงเทพฯ
+        checkSpecialZoneNotice();
+    }
+    
+    // Update final location based on district selection
+    function updateFinalLocation() {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // If Bangkok is selected and a district is chosen, update and recalculate
+        if ((startSelect.value === 'กรุงเทพมหานคร' && startDistrict) || 
+            (destSelect.value === 'กรุงเทพมหานคร' && destDistrict)) {
+            updatePriceEstimate();
+            checkSpecialZoneNotice();
+        }
+    }
+    
+    // ตรวจสอบการแสดงป้ายราคาพิเศษเส้นทางกรุงเทพฯ
+    function checkSpecialZoneNotice() {
+        const startSelect = document.getElementById('start').value;
+        const destSelect = document.getElementById('dest').value;
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // ตรวจสอบว่ามีจุดใดจุดหนึ่งอยู่ในกรุงเทพฯ
+        const isBangkokStart = startSelect === 'กรุงเทพมหานคร' || startDistrict || startSelect.startsWith('เขต');
+        const isBangkokDest = destSelect === 'กรุงเทพมหานคร' || destDistrict || destSelect.startsWith('เขต');
+        
+        if (isBangkokStart || isBangkokDest) {
+            document.getElementById('special-zone-notice').style.display = 'inline-flex';
+        } else {
+            document.getElementById('special-zone-notice').style.display = 'none';
+        }
+    }
+    
+    function updatePriceEstimate() {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // Determine actual start and destination values
+        let start = startSelect.value;
+        let dest = destSelect.value;
+        
+        // If Bangkok is selected and district is provided, use the district
+        if (start === 'กรุงเทพมหานคร' && startDistrict) {
+            start = startDistrict;
+        }
+        
+        if (dest === 'กรุงเทพมหานคร' && destDistrict) {
+            dest = destDistrict;
+        }
+        
+        if (start && dest) {
+            fetch('/calculate_price', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    start: start,
+                    dest: dest
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('price-value').textContent = data.price.toLocaleString();
+                
+                // แสดงข้อความพิเศษสำหรับเขตกรุงเทพฯ
+                if (data.is_special_zone) {
+                    document.getElementById('special-zone-notice').style.display = 'inline-flex';
+                } else {
+                    document.getElementById('special-zone-notice').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    }
+    
+    // Form submission - update with correct district values
+    document.getElementById('editTruckForm').addEventListener('submit', function(e) {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // If Bangkok is selected and a district is chosen, update the select value
+        if (startSelect.value === 'กรุงเทพมหานคร' && startDistrict) {
+            // Create a hidden input for the actual start location
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'actual_start';
+            hiddenInput.value = startDistrict;
+            this.appendChild(hiddenInput);
+        }
+        
+        if (destSelect.value === 'กรุงเทพมหานคร' && destDistrict) {
+            // Create a hidden input for the actual destination
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'actual_dest';
+            hiddenInput.value = destDistrict;
+            this.appendChild(hiddenInput);
+        }
+    });
 </script>
 {% endblock %}

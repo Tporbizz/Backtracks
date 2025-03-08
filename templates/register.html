@@ -1,26 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}เข้าสู่ระบบ - BackTracks{% endblock %}
+{% block title %}สมัครสมาชิก - BackTracks{% endblock %}
 
 {% block fullcontent %}
 <div class="login-wrapper">
     <div class="login-container">
         <div class="auth-header">
-            <div class="logo-circle">
-                <span>🚚</span>
+            <div class="d-flex align-items-center mb-3">
+                <a href="{{ url_for('home') }}" class="btn-back text-white me-auto">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div class="logo-circle mx-auto">
+                    <span>🚚</span>
+                </div>
+                <div class="me-auto"></div>
             </div>
-            <h2>เข้าสู่ระบบ</h2>
-            <p>ยินดีต้อนรับกลับสู่ BackTracks</p>
+            <h2>สมัครสมาชิก</h2>
+            <p>ลงทะเบียนเพื่อใช้งาน BackTracks</p>
         </div>
         <div class="auth-body">
             <form method="POST">
-                {{ form.hidden_tag() }}
+                {{ register_form.hidden_tag() }}
                 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
+                    <label for="email" class="form-label">อีเมล</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        {{ form.email(class="form-control", id="email", placeholder="กรอกอีเมลของคุณ") }}
+                        {{ register_form.email(class="form-control", id="email", placeholder="กรอกอีเมลของคุณ") }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">เบอร์โทรศัพท์</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                        {{ register_form.phone(class="form-control", id="phone", placeholder="เบอร์โทรศัพท์ 10 หลัก") }}
+                    </div>
+                    <small class="form-text">เบอร์โทรศัพท์ 10 หลัก ไม่ต้องใส่ขีด (-)</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="name" class="form-label">ชื่อคนขับ</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        {{ register_form.name(class="form-control", id="name", placeholder="ชื่อ-นามสกุล") }}
                     </div>
                 </div>
                 
@@ -28,15 +51,16 @@
                     <label for="password" class="form-label">รหัสผ่าน</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                        {{ form.password(class="form-control", id="password", placeholder="กรอกรหัสผ่านของคุณ") }}
+                        {{ register_form.password(class="form-control", id="password", placeholder="รหัสผ่านอย่างน้อย 6 ตัว") }}
                     </div>
+                    <small class="form-text">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</small>
                 </div>
                 
-                {{ form.submit(class="btn btn-primary w-100") }}
+                {{ register_form.submit(class="btn btn-primary w-100") }}
             </form>
             
-            <div class="register-link">
-                ยังไม่มีบัญชี? <a href="{{ url_for('register') }}">สมัครสมาชิก</a>
+            <div class="login-link">
+                มีบัญชีแล้ว? <a href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
             </div>
         </div>
     </div>
@@ -51,7 +75,7 @@
     {% if messages %}
         <div class="flash-container">
             {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show animate__animated animate__fadeIn" role="alert">
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -84,7 +108,7 @@
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         width: 100%;
-        max-width: 400px;
+        max-width: 450px;
         margin-bottom: 2rem;
         overflow: hidden;
     }
@@ -92,8 +116,25 @@
     .auth-header {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
         color: white;
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1.5rem;
         text-align: center;
+        position: relative;
+    }
+    
+    .btn-back {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-back:hover {
+        background-color: rgba(255, 255, 255, 0.3);
     }
     
     .logo-circle {
@@ -105,7 +146,6 @@
         align-items: center;
         justify-content: center;
         font-size: 28px;
-        margin: 0 auto 1rem;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
     
@@ -136,18 +176,24 @@
         height: auto;
     }
     
+    .form-text {
+        font-size: 0.8rem;
+        color: var(--text-light);
+        margin-top: 0.3rem;
+    }
+    
     .btn-primary {
         padding: 0.75rem 1rem;
         font-weight: 500;
         margin-bottom: 1.5rem;
     }
     
-    .register-link {
+    .login-link {
         text-align: center;
         font-size: 0.9rem;
     }
     
-    .register-link a {
+    .login-link a {
         color: var(--primary-color);
         text-decoration: none;
         font-weight: 500;

@@ -4,148 +4,390 @@
 
 {% block content %}
 <div class="container">
-    <div class="d-flex align-items-center mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn-back me-3">
-            <span>←</span>
+    <div class="d-flex align-items-center mb-2">
+        <a href="{{ url_for('dashboard') }}" class="btn-back me-2">
+            <i class="bi bi-arrow-left"></i>
         </a>
-        <h1 class="h4 mb-0">ลงทะเบียนรถว่าง</h1>
+        <h1 class="h5 mb-0">ลงทะเบียนรถว่าง</h1>
     </div>
     
     <div class="auth-container">
-        <div class="auth-body">
-            <form method="POST">
+        <div class="auth-body p-3">
+            <form method="POST" id="addTruckForm">
                 {{ truck_form.hidden_tag() }}
                 
-                <div class="mb-3">
-                    <label for="plate" class="form-label">ป้ายทะเบียน</label>
-                    {{ truck_form.plate(class="form-control", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                <div class="mb-2">
+                    <label for="plate" class="form-label small-label">ป้ายทะเบียน</label>
+                    <div class="input-group">
+                        <span class="input-group-text compact"><i class="bi bi-truck"></i></span>
+                        {{ truck_form.plate(class="form-control compact", id="plate", placeholder="กรอกป้ายทะเบียน") }}
+                    </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="truck_type" class="form-label">ประเภทรถ</label>
-                    {{ truck_form.truck_type(class="form-control", id="truck_type") }}
+                <div class="mb-2">
+                    <label for="truck_type" class="form-label small-label">ประเภทรถ</label>
+                    <div class="input-group">
+                        <span class="input-group-text compact"><i class="bi bi-boxes"></i></span>
+                        {{ truck_form.truck_type(class="form-control compact", id="truck_type") }}
+                    </div>
                 </div>
                 
-                <div class="row">
+                <div class="row g-2">
                     <div class="col-6">
-                        <div class="mb-3">
-                            <label for="start" class="form-label">จุดเริ่มต้น</label>
-                            {{ truck_form.start(class="form-control", id="start") }}
+                        <div class="mb-2">
+                            <label for="start" class="form-label small-label">จุดเริ่มต้น</label>
+                            <div class="input-group">
+                                <span class="input-group-text compact"><i class="bi bi-geo-alt"></i></span>
+                                {{ truck_form.start(class="form-control compact", id="start", onchange="checkBkkAndUpdateRoute()") }}
+                            </div>
+                        </div>
+                        
+                        <!-- เลือกเขตสำหรับจุดเริ่มต้น กรณีเป็นกรุงเทพฯ -->
+                        <div id="start_district_container" class="mb-2" style="display: none;">
+                            <label for="start_district" class="form-label small-label">เขตในกรุงเทพฯ</label>
+                            <div class="input-group">
+                                <span class="input-group-text compact"><i class="bi bi-geo-fill"></i></span>
+                                <select class="form-control compact" id="start_district" name="start_district">
+                                    <option value="">-- เลือกเขต --</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="mb-3">
-                            <label for="dest" class="form-label">จุดหมายปลายทาง</label>
-                            {{ truck_form.dest(class="form-control", id="dest") }}
+                        <div class="mb-2">
+                            <label for="dest" class="form-label small-label">จุดหมายปลายทาง</label>
+                            <div class="input-group">
+                                <span class="input-group-text compact"><i class="bi bi-geo-alt-fill"></i></span>
+                                {{ truck_form.dest(class="form-control compact", id="dest", onchange="checkBkkAndUpdateRoute()") }}
+                            </div>
+                        </div>
+                        
+                        <!-- เลือกเขตสำหรับจุดหมายปลายทาง กรณีเป็นกรุงเทพฯ -->
+                        <div id="dest_district_container" class="mb-2" style="display: none;">
+                            <label for="dest_district" class="form-label small-label">เขตในกรุงเทพฯ</label>
+                            <div class="input-group">
+                                <span class="input-group-text compact"><i class="bi bi-geo-fill"></i></span>
+                                <select class="form-control compact" id="dest_district" name="dest_district">
+                                    <option value="">-- เลือกเขต --</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="return_date" class="form-label">วันที่ว่าง</label>
-                    {{ truck_form.return_date(class="form-control", id="return_date") }}
-                </div>
-                
-                <div id="route-preview" class="route-preview mb-3" style="display: none;">
-                    <div class="route-map" id="route-map"></div>
-                    <div class="route-info">
-                        <div class="route-item">
-                            <i class="route-icon">📍</i>
-                            <span>ระยะทาง: <strong id="route-distance">-</strong></span>
-                        </div>
-                        <div class="route-item">
-                            <i class="route-icon">⏱️</i>
-                            <span>เวลาโดยประมาณ: <strong id="route-time">-</strong></span>
-                        </div>
+                <div class="mb-2">
+                    <label for="return_date" class="form-label small-label">วันที่ว่าง</label>
+                    <div class="input-group">
+                        <span class="input-group-text compact"><i class="bi bi-calendar3"></i></span>
+                        {{ truck_form.return_date(class="form-control compact", id="return_date") }}
                     </div>
                 </div>
                 
-                <div id="price-estimate" class="alert alert-info mb-3" style="display: none;">
-                    <strong>ประมาณการราคา:</strong> <span id="price-value">0</span> บาท
+                <div id="price-estimate" class="price-card-compact mb-3" style="display: none;">
+                    <div class="price-content">
+                        <div class="price-icon-compact">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <div class="price-info">
+                            <div class="price-label-compact">ประมาณการราคา</div>
+                            <div class="price-value-compact"><span id="price-value">0</span> บาท</div>
+                            <div id="special-zone-notice" class="special-zone-notice-compact" style="display: none;">
+                                <i class="bi bi-info-circle"></i> ราคาพิเศษในเขตกรุงเทพฯ (25 บาท/กม.)
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <input type="hidden" name="truck_submit" value="1">
-                {{ truck_form.submit(class="btn btn-primary") }}
+                <button type="submit" class="btn btn-primary w-100 py-2 mt-2 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-check-circle-fill me-2"></i> ลงทะเบียนรับงาน
+                </button>
             </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+    .btn-back {
+        background-color: rgba(0, 0, 0, 0.05);
+        color: var(--text-dark);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .auth-container {
+        background-color: #FFFFFF;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .form-control.compact {
+        height: 40px;
+        font-size: 15px;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .input-group-text.compact {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-color: #DFE1E6;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .small-label {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        font-size: 14px;
+    }
+    
+    .price-card-compact {
+        background: linear-gradient(135deg, #0052CC, #003E99);
+        border-radius: var(--rounded-md);
+        padding: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .price-content {
+        display: flex;
+        align-items: center;
+    }
+    
+    .price-icon-compact {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        font-size: 18px;
+    }
+    
+    .price-label-compact {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+    
+    .price-value-compact {
+        color: white;
+        font-size: 20px;
+        font-weight: 700;
+    }
+    
+    .special-zone-notice-compact {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 11px;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        margin-top: 4px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .special-zone-notice-compact i {
+        margin-right: 3px;
+    }
+    
+    .btn-primary {
+        height: 46px;
+        font-size: 15px;
+    }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-    var routeMap = null;
+    var bkkDistricts = [
+        "เขตพระนคร", "เขตดุสิต", "เขตหนองจอก", "เขตบางรัก", "เขตบางเขน", 
+        "เขตบางกะปิ", "เขตปทุมวัน", "เขตป้อมปราบศัตรูพ่าย", "เขตพระโขนง", 
+        "เขตมีนบุรี", "เขตลาดกระบัง", "เขตยานนาวา", "เขตสัมพันธวงศ์", 
+        "เขตพญาไท", "เขตธนบุรี", "เขตบางกอกใหญ่", "เขตห้วยขวาง", 
+        "เขตคลองสาน", "เขตตลิ่งชัน", "เขตบางกอกน้อย", "เขตบางขุนเทียน", 
+        "เขตภาษีเจริญ", "เขตหนองแขม", "เขตราษฎร์บูรณะ", "เขตบางพลัด", 
+        "เขตดินแดง", "เขตบึงกุ่ม", "เขตสาทร", "เขตบางซื่อ", "เขตจตุจักร", 
+        "เขตบางคอแหลม", "เขตประเวศ", "เขตคลองเตย", "เขตสวนหลวง", 
+        "เขตจอมทอง", "เขตดอนเมือง", "เขตราชเทวี", "เขตลาดพร้าว", 
+        "เขตวัฒนา", "เขตบางแค", "เขตหลักสี่", "เขตสายไหม", "เขตคันนายาว", 
+        "เขตสะพานสูง", "เขตวังทองหลาง", "เขตคลองสามวา", "เขตบางนา", 
+        "เขตทวีวัฒนา", "เขตทุ่งครุ", "เขตบางบอน"
+    ];
     
-    // Initialize date picker
+    // Initialize on document ready
     document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('return_date').setAttribute('min', today);
+        
         // Add event listeners for price estimation
-        document.getElementById('start').addEventListener('change', updateRouteAndPrice);
-        document.getElementById('dest').addEventListener('change', updateRouteAndPrice);
+        document.getElementById('start').addEventListener('change', checkBkkAndUpdateRoute);
+        document.getElementById('dest').addEventListener('change', checkBkkAndUpdateRoute);
+        
+        // Initialize district dropdowns
+        initializeDistrictDropdowns();
+        
+        // Add event listeners for district changes
+        document.getElementById('start_district').addEventListener('change', updateFinalLocation);
+        document.getElementById('dest_district').addEventListener('change', updateFinalLocation);
+        
+        // Check initial values
+        checkBkkAndUpdateRoute();
     });
     
-    function initRouteMap() {
-        if (!routeMap) {
-            document.getElementById('route-preview').style.display = 'block';
-            routeMap = L.map('route-map').setView([15.87, 100.9925], 6);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© <a href="https://carto.com/attributions">CARTO</a>',
-                maxZoom: 18
-            }).addTo(routeMap);
+    // Initialize district dropdowns
+    function initializeDistrictDropdowns() {
+        const startDistrictSelect = document.getElementById('start_district');
+        const destDistrictSelect = document.getElementById('dest_district');
+        
+        // Clear existing options except the first one
+        startDistrictSelect.innerHTML = '<option value="">-- เลือกเขต --</option>';
+        destDistrictSelect.innerHTML = '<option value="">-- เลือกเขต --</option>';
+        
+        // Add district options
+        bkkDistricts.forEach(district => {
+            const startOption = document.createElement('option');
+            startOption.value = district;
+            startOption.textContent = district;
+            startDistrictSelect.appendChild(startOption);
+            
+            const destOption = document.createElement('option');
+            destOption.value = district;
+            destOption.textContent = district;
+            destDistrictSelect.appendChild(destOption);
+        });
+    }
+    
+    // Check if Bangkok is selected and show/hide district dropdowns
+    function checkBkkAndUpdateRoute() {
+        const start = document.getElementById('start').value;
+        const dest = document.getElementById('dest').value;
+        
+        // Check if start is Bangkok
+        if (start === 'กรุงเทพมหานคร') {
+            document.getElementById('start_district_container').style.display = 'block';
+        } else {
+            document.getElementById('start_district_container').style.display = 'none';
+        }
+        
+        // Check if destination is Bangkok
+        if (dest === 'กรุงเทพมหานคร') {
+            document.getElementById('dest_district_container').style.display = 'block';
+        } else {
+            document.getElementById('dest_district_container').style.display = 'none';
+        }
+        
+        // Update route and price
+        updateRouteAndPrice();
+    }
+    
+    // Update final location based on district selection
+    function updateFinalLocation() {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // If Bangkok is selected and a district is chosen, update hidden fields and recalculate
+        if ((startSelect.value === 'กรุงเทพมหานคร' && startDistrict) || 
+            (destSelect.value === 'กรุงเทพมหานคร' && destDistrict)) {
+            updateRouteAndPrice();
         }
     }
     
     function updateRouteAndPrice() {
-        var start = document.getElementById('start').value;
-        var dest = document.getElementById('dest').value;
+        updatePriceEstimate();
+    }
+    
+    function updatePriceEstimate() {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // Determine actual start and destination values
+        let start = startSelect.value;
+        let dest = destSelect.value;
+        
+        // If Bangkok is selected and district is provided, use the district
+        if (start === 'กรุงเทพมหานคร' && startDistrict) {
+            start = startDistrict;
+        }
+        
+        if (dest === 'กรุงเทพมหานคร' && destDistrict) {
+            dest = destDistrict;
+        }
         
         if (start && dest) {
-            initRouteMap();
-            
-            // This would be replaced with actual API call in production
-            var distance = Math.floor(Math.random() * 1500) + 500;
-            var price = Math.floor(distance * 12);
-            // ปัดเป็นหลัก 500
-            price = (price % 500 < 250) ? Math.floor(price / 500) * 500 : Math.ceil(price / 500) * 500;
-            
-            document.getElementById('price-estimate').style.display = 'block';
-            document.getElementById('price-value').textContent = price.toLocaleString();
-            
-            // Update route information
-            document.getElementById('route-distance').textContent = distance + ' กม.';
-            
-            // Calculate estimated time (approx. 60km/h)
-            var hours = Math.floor(distance / 60);
-            var minutes = Math.floor((distance % 60) / 60 * 60);
-            document.getElementById('route-time').textContent = hours + ' ชั่วโมง ' + minutes + ' นาที';
-            
-            // Clear previous route
-            routeMap.eachLayer(function(layer) {
-                if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-                    routeMap.removeLayer(layer);
+            fetch('/calculate_price', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    start: start,
+                    dest: dest
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('price-estimate').style.display = 'block';
+                document.getElementById('price-value').textContent = data.price.toLocaleString();
+                
+                // แสดงข้อความพิเศษสำหรับเขตกรุงเทพฯ
+                if (data.is_special_zone) {
+                    document.getElementById('special-zone-notice').style.display = 'inline-flex';
+                } else {
+                    document.getElementById('special-zone-notice').style.display = 'none';
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
-            
-            // Add markers for start and destination
-            // In production, use real coordinates from an API
-            var startCoords = getRandomCoordinates();
-            var destCoords = getRandomCoordinates();
-            
-            var startMarker = L.marker(startCoords).addTo(routeMap).bindPopup(start);
-            var destMarker = L.marker(destCoords).addTo(routeMap).bindPopup(dest);
-            
-            // Draw route line
-            var routeLine = L.polyline([startCoords, destCoords], {color: '#0052CC'}).addTo(routeMap);
-            
-            // Fit map to show the route
-            routeMap.fitBounds(routeLine.getBounds(), {padding: [30, 30]});
         }
     }
     
-    function getRandomCoordinates() {
-        // For demo only - in production use real coordinates
-        var lat = 13.0 + Math.random() * 5.0;
-        var lng = 99.0 + Math.random() * 3.0;
-        return [lat, lng];
-    }
+    // Form submission - update with correct district values
+    document.getElementById('addTruckForm').addEventListener('submit', function(e) {
+        const startSelect = document.getElementById('start');
+        const destSelect = document.getElementById('dest');
+        const startDistrict = document.getElementById('start_district').value;
+        const destDistrict = document.getElementById('dest_district').value;
+        
+        // If Bangkok is selected and a district is chosen, update the select value
+        if (startSelect.value === 'กรุงเทพมหานคร' && startDistrict) {
+            // Create a hidden input for the actual start location
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'actual_start';
+            hiddenInput.value = startDistrict;
+            this.appendChild(hiddenInput);
+        }
+        
+        if (destSelect.value === 'กรุงเทพมหานคร' && destDistrict) {
+            // Create a hidden input for the actual destination
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'actual_dest';
+            hiddenInput.value = destDistrict;
+            this.appendChild(hiddenInput);
+        }
+    });
 </script>
 {% endblock %}

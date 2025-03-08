@@ -2,18 +2,519 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}BackTracks - แพลตฟอร์มจัดการรถสไลด์{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon/favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='img/favicon/site.webmanifest') }}">
+    
     {% block extra_css %}{% endblock %}
     <style>
+        :root {
+            --primary-color: #0052CC;
+            --primary-light: #E5F0FF;
+            --primary-dark: #003E99;
+            --accent-color: #FF5630;
+            --success-color: #36B37E;
+            --warning-color: #FFAB00;
+            --error-color: #FF5630;
+            --text-dark: #172B4D;
+            --text-light: #6B778C;
+            --bg-light: #F2F7FF;
+            --white: #FFFFFF;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --rounded-sm: 8px;
+            --rounded-md: 12px;
+            --rounded-lg: 16px;
+        }
+        
         body {
             font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            padding-bottom: 70px; /* Space for mobile tab bar */
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        /* Mobile header */
+        .mobile-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .header-logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-logo::before {
+            content: "🚚";
+            margin-right: 0.5rem;
+            font-size: 1.2em;
+        }
+        
+        .btn-logout {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--rounded-sm);
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-logout:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        /* Main container */
+        .main-container {
+            padding: 1rem 0;
+            min-height: calc(100vh - 130px);
+        }
+        
+        /* Mobile tab bar */
+        .mobile-tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 65px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--text-light);
+            padding: 0.5rem 0;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .tab-item.active {
+            color: var(--primary-color);
+        }
+        
+        .tab-item.active::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 3px;
+            background-color: var(--primary-color);
+            border-radius: 0 0 3px 3px;
+        }
+        
+        .tab-icon {
+            font-size: 1.4rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .tab-text {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        
+        .tab-add-button {
+            display: none; /* ซ่อนปุ่ม + ใน tab bar */
+        }
+        
+        /* ปุ่มลอย */
+        .btn-floating-add {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0052CC, #003E99);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    box-shadow: 0 6px 16px rgba(0, 82, 204, 0.4);
+    z-index: 1001;
+    transition: all 0.3s ease;
+}
+
+.btn-floating-add:hover, .btn-floating-add:active {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 82, 204, 0.5);
+}
+        
+        /* Form controls and buttons */
+        .form-control {
+            border-radius: var(--rounded-sm);
+            border: 1px solid #DFE1E6;
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.25);
+        }
+        
+        .btn {
+            border-radius: var(--rounded-sm);
+            padding: 0.65rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 82, 204, 0.25);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+            box-shadow: 0 6px 15px rgba(0, 82, 204, 0.35);
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            background-color: transparent;
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+        
+        .btn-lg {
+            height: 54px;
+            font-size: 1rem;
+        }
+        
+        .btn-sm {
+            height: 38px;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+        }
+        
+        /* Cards */
+        .card {
+            border-radius: var(--rounded-md);
+            border: none;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        /* Truck cards */
+        .truck-card {
+            background-color: white;
+            border-radius: var(--rounded-md);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .truck-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .truck-card.confirmed {
+            border-left-color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+        
+        .truck-card.expired {
+            border-left-color: var(--error-color);
+            background-color: #FFF5F3;
+        }
+        
+        .truck-card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        
+        .truck-route {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .truck-details {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+        
+        .truck-price {
+            font-weight: 700;
+            color: var(--success-color);
+            font-size: 1.2rem;
+        }
+        
+        .truck-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Modals */
+        .modal-content {
+            border-radius: var(--rounded-md);
+            border: none;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-bottom: none;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            border-top: none;
+            padding: 1rem 1.5rem 1.5rem;
+        }
+        
+        /* Alert and notifications */
+        .alert {
+            border-radius: var(--rounded-sm);
+            box-shadow: var(--shadow-sm);
+            border: none;
+        }
+        
+        .alert-success {
+            background-color: #E3FCEF;
+            color: #00875A;
+        }
+        
+        .alert-error, .alert-danger {
+            background-color: #FFEBE6;
+            color: #DE350B;
+        }
+        
+        .alert-info {
+            background-color: #DEEBFF;
+            color: #0747A6;
+        }
+        
+        .flash-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            max-width: 300px;
+            z-index: 1050;
+        }
+        
+        /* Forms */
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--primary-light);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Truck Detail Modal */
+        .truck-detail-modal .modal-dialog {
+            margin: 0;
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            max-width: 100%;
+            transform: translate(0, 100%);
+            transition: transform 0.3s ease-out;
+        }
+        
+        .truck-detail-modal .modal-content {
+            border-radius: 20px 20px 0 0;
+            height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .truck-detail-modal.show .modal-dialog {
+            transform: translate(0, 10%);
+        }
+        
+        .truck-detail-modal .close-handle {
+            width: 50px;
+            height: 5px;
+            background-color: #DFE1E6;
+            border-radius: 3px;
+            margin: 10px auto;
+        }
+        
+        /* Special price zone badge */
+        .special-price-zone {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.8rem;
+            background-color: rgba(0, 82, 204, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--primary-color);
+            margin-top: 0.5rem;
+        }
+        
+        .special-price-zone i {
+            margin-right: 4px;
+        }
+        
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background-color: white;
+            border-radius: var(--rounded-md);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state p {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Media Queries */
+        @media (max-width: 576px) {
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            .btn-group-responsive {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .btn-group-responsive .btn {
+                margin-bottom: 0.5rem;
+                width: 100%;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .truck-detail-modal .modal-dialog {
+                position: relative;
+                transform: none !important;
+                max-width: 600px;
+                margin: 1.75rem auto;
+            }
+            
+            .truck-detail-modal .modal-content {
+                height: auto;
+                max-height: 80vh;
+                border-radius: var(--rounded-md);
+            }
+            
+            .truck-detail-modal .close-handle {
+                display: none;
+            }
         }
     </style>
+    {% block styles %}{% endblock %}
 </head>
 <body>
     {% block fullcontent %}
@@ -22,7 +523,9 @@
         <div class="container d-flex justify-content-between align-items-center py-3">
             <a href="{{ url_for('home') }}" class="header-logo">BackTracks</a>
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('logout') }}" class="btn-logout">ออกจากระบบ</a>
+            <a href="{{ url_for('logout') }}" class="btn-logout">
+                <i class="bi bi-box-arrow-right"></i> ออกจากระบบ
+            </a>
             {% endif %}
         </div>
     </div>
@@ -32,7 +535,7 @@
         {% if messages %}
             <div class="container mt-3">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show animate__animated animate__fadeIn" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -46,35 +549,105 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- ปุ่มลอยสำหรับเพิ่มรถใหม่ -->
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('add_truck') }}" class="btn-floating-add">
+        <i class="bi bi-plus-lg"></i>
+    </a>
+    {% endif %}
+
     <!-- Mobile Tab Bar - Only shown for authenticated users -->
     {% if current_user.is_authenticated %}
     <div class="mobile-tab-bar">
         <a href="{{ url_for('dashboard') }}" class="tab-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
-            <span class="tab-icon">🏠</span>
+            <span class="tab-icon"><i class="bi bi-house"></i></span>
             <span class="tab-text">หน้าแรก</span>
         </a>
         <a href="{{ url_for('search') }}" class="tab-item {% if request.endpoint == 'search' %}active{% endif %}">
-            <span class="tab-icon">🔍</span>
+            <span class="tab-icon"><i class="bi bi-search"></i></span>
             <span class="tab-text">ค้นหา</span>
         </a>
-        <a href="{{ url_for('add_truck') }}" class="tab-add-button">
-            <span class="add-icon">+</span>
-        </a>
+        <!-- เอาปุ่มเพิ่มรถออกจาก tab bar -->
+        <div style="flex: 1;"></div>
         <a href="{{ url_for('my_jobs') }}" class="tab-item {% if request.endpoint == 'my_jobs' %}active{% endif %}">
-            <span class="tab-icon">📋</span>
+            <span class="tab-icon"><i class="bi bi-clipboard-check"></i></span>
             <span class="tab-text">งาน</span>
         </a>
         <a href="{{ url_for('profile') }}" class="tab-item {% if request.endpoint == 'profile' %}active{% endif %}">
-            <span class="tab-icon">👤</span>
+            <span class="tab-icon"><i class="bi bi-person"></i></span>
             <span class="tab-text">โปรไฟล์</span>
         </a>
     </div>
     {% endif %}
     {% endblock %}
 
+    <!-- Global Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Global Modal Container -->
+    <div id="globalModalContainer"></div>
+    
+    <script>
+        // Global utility functions
+        function formatThaiDate(dateStr) {
+            const months = [
+                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+            ];
+            const date = new Date(dateStr);
+            return `${date.getDate()} ${months[date.getMonth()]}`;
+        }
+        
+        function formatPrice(price) {
+            return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        // Show truck detail in modal
+        function showTruckDetail(truckId) {
+            fetch(`/truck/${truckId}/partial`)
+                .then(response => response.text())
+                .then(html => {
+                    const modalContainer = document.getElementById('globalModalContainer');
+                    modalContainer.innerHTML = html;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('truckDetailModal'));
+                    modal.show();
+                    
+                    // Initialize map after modal is shown
+                    document.getElementById('truckDetailModal').addEventListener('shown.bs.modal', function() {
+                        if (window.initTruckDetailMap) {
+                            window.initTruckDetailMap();
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading truck details:', error);
+                });
+        }
+        
+        // Auto-dismiss alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert:not(.alert-important)');
+                alerts.forEach(alert => {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+            
+            // ตั้งค่าขั้นต่ำสำหรับ input date ให้เป็นวันปัจจุบัน
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            const today = new Date().toISOString().split('T')[0];
+            dateInputs.forEach(input => {
+                if (!input.min) {
+                    input.min = today;
+                }
+            });
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

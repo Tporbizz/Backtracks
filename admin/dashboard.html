@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}แดชบอร์ดแอดมิน - BackTracks{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-header">
+        <h1 class="h4 mb-0">แดชบอร์ดผู้ดูแลระบบ</h1>
+        <div class="admin-user">
+            <div class="admin-avatar">{{ current_user.name[0]|upper }}</div>
+            <div class="admin-username">{{ current_user.name }}</div>
+        </div>
+    </div>
+    
+    <div class="admin-nav">
+        <a href="{{ url_for('admin_dashboard') }}" class="nav-item active">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">แดชบอร์ด</span>
+        </a>
+        <a href="{{ url_for('admin_users') }}" class="nav-item">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">ผู้ใช้งาน</span>
+        </a>
+        <a href="{{ url_for('admin_trucks') }}" class="nav-item">
+            <span class="nav-icon">🚚</span>
+            <span class="nav-text">ข้อมูลรถ</span>
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="nav-item">
+            <span class="nav-icon">🔙</span>
+            <span class="nav-text">กลับสู่หน้าหลัก</span>
+        </a>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-header">ผู้ใช้ทั้งหมด</div>
+            <div class="stat-card-number">{{ stats.total_users }}</div>
+            <div class="stat-card-icon user-icon">👥</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">รถทั้งหมด</div>
+            <div class="stat-card-number">{{ stats.total_trucks }}</div>
+            <div class="stat-card-icon truck-icon">🚚</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">รถที่ยืนยันแล้ว</div>
+            <div class="stat-card-number">{{ stats.confirmed_trucks }}</div>
+            <div class="stat-card-icon confirmed-icon">✅</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">รถที่ว่างอยู่</div>
+            <div class="stat-card-number">{{ stats.available_trucks }}</div>
+            <div class="stat-card-icon available-icon">🟢</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">รถที่หมดอายุ</div>
+            <div class="stat-card-number">{{ stats.expired_trucks }}</div>
+            <div class="stat-card-icon expired-icon">⏱️</div>
+        </div>
+    </div>
+    
+    <div class="admin-panels">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>ผู้ใช้ล่าสุด</h2>
+                <a href="{{ url_for('admin_users') }}" class="panel-action">ดูทั้งหมด</a>
+            </div>
+            <div class="panel-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ชื่อ</th>
+                            <th>อีเมล</th>
+                            <th>เบอร์โทร</th>
+                            <th>วันที่สมัคร</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in latest_users %}
+                        <tr>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.phone }}</td>
+                            <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline">แก้ไข</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <h2>รถล่าสุด</h2>
+                <a href="{{ url_for('admin_trucks') }}" class="panel-action">ดูทั้งหมด</a>
+            </div>
+            <div class="panel-body">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ทะเบียน</th>
+                            <th>ประเภท</th>
+                            <th>เส้นทาง</th>
+                            <th>วันที่ว่าง</th>
+                            <th>สถานะ</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for truck in latest_trucks %}
+                        <tr>
+                            <td>{{ truck.plate }}</td>
+                            <td>{{ truck.truck_type }}</td>
+                            <td>{{ truck.start }} → {{ truck.dest }}</td>
+                            <td>{{ truck.return_date }}</td>
+                            <td>
+                                {% if truck.is_confirmed %}
+                                <span class="status-badge confirmed">ยืนยันแล้ว</span>
+                                {% elif truck.is_expired %}
+                                <span class="status-badge expired">หมดอายุ</span>
+                                {% else %}
+                                <span class="status-badge available">ว่าง</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_edit_truck', truck_id=truck.id) }}" class="btn btn-sm btn-outline">แก้ไข</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .admin-user {
+        display: flex;
+        align-items: center;
+    }
+    
+    .admin-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: #0052CC;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin-right: 10px;
+        font-weight: 600;
+    }
+    
+    .admin-username {
+        font-weight: 500;
+    }
+    
+    .admin-nav {
+        display: flex;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .nav-item {
+        flex: 1;
+        padding: 15px;
+        text-align: center;
+        text-decoration: none;
+        color: #6B778C;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    
+    .nav-item.active {
+        background-color: #F2F7FF;
+        color: #0052CC;
+        font-weight: 500;
+    }
+    
+    .nav-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background-color: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card-header {
+        color: #6B778C;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .stat-card-number {
+        font-size: 32px;
+        font-weight: 600;
+        color: #172B4D;
+    }
+    
+    .stat-card-icon {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        font-size: 28px;
+        opacity: 0.2;
+    }
+    
+    .admin-panels {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .panel {
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .panel-header h2 {
+        font-size: 18px;
+        margin: 0;
+    }
+    
+    .panel-action {
+        font-size: 14px;
+        color: #0052CC;
+        text-decoration: none;
+    }
+    
+    .panel-body {
+        padding: 0;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .data-table th, .data-table td {
+        padding: 12px 20px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .data-table th {
+        background-color: #F9FAFC;
+        font-weight: 500;
+        color: #6B778C;
+        font-size: 14px;
+    }
+    
+    .data-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    
+    .status-badge.confirmed {
+        background-color: #DEEBFF;
+        color: #0052CC;
+    }
+    
+    .status-badge.expired {
+        background-color: #FFEBE6;
+        color: #FF5630;
+    }
+    
+    .status-badge.available {
+        background-color: #E3FCEF;
+        color: #36B37E;
+    }
+    
+    @media (min-width: 768px) {
+        .admin-panels {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .nav-text {
+            display: none;
+        }
+        
+        .nav-icon {
+            margin-bottom: 0;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}

@@ -15,29 +15,34 @@
             </div>
             <div class="profile-info">
                 <h2>{{ user.name }}</h2>
-                <p>{{ user.email }}</p>
-                <p>{{ user.phone }}</p>
+                <p class="profile-email">
+                    <i class="bi bi-envelope"></i> {{ user.email }}
+                </p>
+                <p class="profile-phone">
+                    <i class="bi bi-telephone"></i> {{ user.phone }}
+                </p>
             </div>
         </div>
         
         <div class="profile-stats">
             <div class="stat-item">
-                <span class="stat-value">{{ user.trucks|length }}</span>
+                <span class="stat-value">{{ stats.total }}</span>
                 <span class="stat-label">รถทั้งหมด</span>
             </div>
             <div class="stat-item">
-                <span class="stat-value">{{ user.trucks|selectattr('is_confirmed', 'eq', true)|list|length }}</span>
+                <span class="stat-value">{{ stats.confirmed }}</span>
                 <span class="stat-label">รถที่จองแล้ว</span>
             </div>
             <div class="stat-item">
-                <span class="stat-value">0</span>
-                <span class="stat-label">รีวิว</span>
+                <span class="stat-value">{{ stats.expired }}</span>
+                <span class="stat-label">รถที่หมดอายุ</span>
             </div>
         </div>
         
         <div class="profile-actions">
-            <a href="#" class="btn btn-primary btn-sm">แก้ไขโปรไฟล์</a>
-            <a href="#" class="btn btn-outline btn-sm">เปลี่ยนรหัสผ่าน</a>
+            <a href="{{ url_for('change_password') }}" class="btn btn-outline btn-sm">
+                <i class="bi bi-lock-fill me-1"></i> เปลี่ยนรหัสผ่าน
+            </a>
         </div>
     </div>
     
@@ -56,9 +61,15 @@
         <div class="referral-share mt-3">
             <p>แชร์ลิงก์:</p>
             <div class="share-buttons">
-                <a href="#" class="share-btn facebook">Facebook</a>
-                <a href="#" class="share-btn line">Line</a>
-                <a href="#" class="share-btn twitter">Twitter</a>
+                <a href="#" class="share-btn facebook">
+                    <i class="bi bi-facebook me-1"></i> Facebook
+                </a>
+                <a href="#" class="share-btn line">
+                    <i class="bi bi-line me-1"></i> Line
+                </a>
+                <a href="#" class="share-btn twitter">
+                    <i class="bi bi-twitter me-1"></i> Twitter
+                </a>
             </div>
         </div>
     </div>
@@ -83,15 +94,270 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+    .profile-card {
+        background-color: white;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-md);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profile-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .profile-avatar {
+        margin-right: 1.5rem;
+    }
+    
+    .avatar-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: 600;
+    }
+    
+    .profile-info h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .profile-info p {
+        color: var(--text-light);
+        margin-bottom: 0.3rem;
+        font-size: 0.95rem;
+    }
+    
+    .profile-email i, .profile-phone i {
+        margin-right: 6px;
+        color: var(--primary-color);
+    }
+    
+    .profile-stats {
+        display: flex;
+        justify-content: space-around;
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+        padding: 1rem 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        display: block;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .stat-label {
+        color: var(--text-light);
+        font-size: 0.85rem;
+    }
+    
+    .profile-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+    
+    .affiliate-card, .affiliate-stats {
+        background-color: white;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-md);
+        padding: 1.5rem;
+    }
+    
+    .affiliate-card h3, .affiliate-stats h3 {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    .affiliate-card p {
+        color: var(--text-light);
+    }
+    
+    .referral-label {
+        font-weight: 500;
+        margin-bottom: 0.3rem;
+    }
+    
+    .referral-box {
+        display: flex;
+        border: 1px solid #e0e0e0;
+        border-radius: var(--rounded-sm);
+        overflow: hidden;
+    }
+    
+    .referral-text {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        font-family: monospace;
+        font-size: 1.1rem;
+        background-color: var(--bg-light);
+    }
+    
+    .referral-copy {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0 1.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .referral-copy:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    .share-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .share-btn {
+        padding: 0.5rem 1rem;
+        border-radius: var(--rounded-sm);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        flex: 1;
+        text-align: center;
+        transition: all 0.2s ease;
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .share-btn.facebook {
+        background-color: #1877F2;
+        color: white;
+    }
+    
+    .share-btn.line {
+        background-color: #06C755;
+        color: white;
+    }
+    
+    .share-btn.twitter {
+        background-color: #1DA1F2;
+        color: white;
+    }
+    
+    .stats-container {
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+        padding: 1rem;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-row .stat-label {
+        font-size: 0.95rem;
+        color: var(--text-dark);
+    }
+    
+    .stat-row .stat-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    @media (max-width: 576px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .profile-avatar {
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .share-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
     function copyReferralCode() {
         var code = document.querySelector('.referral-text').innerText;
         navigator.clipboard.writeText(code).then(function() {
-            alert('คัดลอกรหัสแนะนำแล้ว: ' + code);
+            // Create toast notification
+            let toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.textContent = 'คัดลอกรหัสแนะนำแล้ว: ' + code;
+            document.body.appendChild(toast);
+            
+            // Show and auto-hide toast
+            setTimeout(() => {
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 2000);
+            }, 100);
         }, function() {
             alert('ไม่สามารถคัดลอกได้');
         });
     }
+    
+    // Add inline styles for toast notification
+    document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .toast-notification {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1050;
+        }
+        
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+    `);
 </script>
 {% endblock %}

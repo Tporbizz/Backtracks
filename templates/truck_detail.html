@@ -1,0 +1,272 @@
+<!-- Truck Detail Modal -->
+<div class="modal fade truck-detail-modal" id="truckDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="close-handle"></div>
+            
+            <div class="truck-detail-header">
+                <div class="truck-owner">
+                    <div class="owner-avatar">
+                        <span>{{ truck.user.name[0]|upper }}</span>
+                    </div>
+                    <div class="owner-info">
+                        <h2>{{ truck.user.name }}</h2>
+                        <div class="rating">
+                            ★ {{ truck.rating }}
+                            <span class="review-count">({{ truck.review_count }} รีวิว)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="truck-status {% if truck.is_confirmed %}confirmed{% elif truck.is_expired %}expired{% else %}available{% endif %}">
+                    {% if truck.is_confirmed %}
+                        <span>จองแล้ว</span>
+                    {% elif truck.is_expired %}
+                        <span>หมดเวลา</span>
+                    {% else %}
+                        <span>ว่าง</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="truck-map">
+                <div id="map"></div>
+            </div>
+            
+            <div class="truck-content">
+                <div class="route-info p-2 mb-2 bg-light rounded">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold">{{ truck.start }} → {{ truck.dest }}</span>
+                        <span class="text-primary">{{ truck.return_date|thai_date }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>{{ truck.plate }} • {{ truck.truck_type }}</span>
+                        <span class="fw-bold text-success">{{ "{:,}".format(truck.price) }}฿</span>
+                    </div>
+                </div>
+                
+                <div class="route-stats">
+                    <div class="stat-row">
+                        <div class="stat-icon">📏</div>
+                        <div class="stat-label">ระยะทาง:</div>
+                        <div class="stat-value">{{ distance }} กม.</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-icon">⏱️</div>
+                        <div class="stat-label">เวลาประมาณ:</div>
+                        <div class="stat-value">{{ travel_time }}</div>
+                    </div>
+                </div>
+                
+                {% if truck.user_id != current_user.id %}
+                <div class="truck-actions mt-3">
+                    <a href="tel:{{ truck.user.phone }}" class="btn btn-primary btn-sm w-100 mb-2">
+                        <span>📞</span> โทรหาคนขับ
+                    </a>
+                    <a href="https://line.me/ti/p/~{{ truck.user.phone }}" class="btn btn-outline btn-sm w-100">
+                        <span>💬</span> ส่งข้อความ Line
+                    </a>
+                </div>
+                {% else %}
+                    {% if not truck.is_confirmed and not truck.is_expired %}
+                    <div class="truck-actions mt-3">
+                        <form method="POST" action="{{ url_for('confirm_truck', truck_id=truck.id) }}" class="mb-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">ยืนยันรับงาน</button>
+                        </form>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-sm flex-grow-1">แก้ไข</a>
+                            <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}" class="flex-grow-1">
+                                <button type="submit" class="btn btn-outline btn-sm w-100" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">ลบ</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if truck.is_expired %}
+                    <div class="truck-actions mt-3">
+                        <form method="POST" action="{{ url_for('extend_truck', truck_id=truck.id) }}" class="mb-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">ขยายเวลาประกาศ</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}">
+                            <button type="submit" class="btn btn-outline btn-sm w-100" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">ลบ</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-sm {
+        max-width: 350px;
+    }
+    
+    .truck-detail-header {
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .truck-owner {
+        display: flex;
+        align-items: center;
+    }
+    
+    .owner-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
+    
+    .owner-info h2 {
+        font-size: 16px;
+        margin-bottom: 2px;
+        font-weight: 600;
+    }
+    
+    .rating {
+        color: var(--warning-color);
+        font-size: 12px;
+    }
+    
+    .review-count {
+        color: var(--text-light);
+        font-size: 11px;
+        margin-left: 3px;
+    }
+    
+    .truck-status {
+        padding: 4px 8px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    
+    .truck-status.available {
+        background-color: #E3FCEF;
+        color: var(--success-color);
+    }
+    
+    .truck-status.confirmed {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .truck-status.expired {
+        background-color: #FFEBE6;
+        color: var(--error-color);
+    }
+    
+    .truck-map {
+        height: 150px;
+        background-color: #f5f5f5;
+    }
+    
+    #map {
+        height: 100%;
+    }
+    
+    .truck-content {
+        padding: 12px;
+    }
+    
+    .route-stats {
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .stat-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+    }
+    
+    .stat-icon {
+        margin-right: 8px;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-right: 8px;
+        width: 75px;
+    }
+    
+    .stat-value {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+</style>
+
+<script>
+    // Map initialization function (will be called when modal is shown)
+    window.initTruckDetailMap = function() {
+        var map = L.map('map').setView([{{ truck.lat }}, {{ truck.lon }}], 10);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+        
+        // Start and destination coordinates
+        var startLatLng = [{{ truck.lat }}, {{ truck.lon }}];
+        var destLatLng = [{{ provinces[truck.dest][0] }}, {{ provinces[truck.dest][1] }}];
+        
+        // Start and destination markers
+        var startMarker = L.circleMarker(startLatLng, {
+            radius: 7,
+            fillColor: '#36B37E',
+            color: '#fff',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map);
+        
+        var destMarker = L.circleMarker(destLatLng, {
+            radius: 7,
+            fillColor: '#FF5630',
+            color: '#fff',
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        }).addTo(map);
+        
+        // Add popup
+        startMarker.bindPopup('<strong>{{ truck.start }}</strong>');
+        destMarker.bindPopup('<strong>{{ truck.dest }}</strong>');
+        
+        // Add route line
+        var routeLine = L.polyline([startLatLng, destLatLng], {
+            color: '#0052CC',
+            weight: 2,
+            opacity: 0.7
+        }).addTo(map);
+        
+        // Fit bounds to show the entire route
+        map.fitBounds(routeLine.getBounds(), {
+            padding: [20, 20]
+        });
+    };
+    
+    // Initialize map when modal is shown
+    document.addEventListener('DOMContentLoaded', function() {
+        $('#truckDetailModal').on('shown.bs.modal', function() {
+            window.initTruckDetailMap();
+        });
+    });
+</script>

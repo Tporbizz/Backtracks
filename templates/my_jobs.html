@@ -4,56 +4,83 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="h4 mb-3">งานของฉัน</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">งานของฉัน</h1>
+        <a href="{{ url_for('add_truck') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> เพิ่มรถ
+        </a>
+    </div>
     
     <!-- Job Tabs -->
-    <ul class="nav nav-tabs mb-4" id="jobTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
-                รถที่ว่างอยู่
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="booked-tab" data-bs-toggle="tab" data-bs-target="#booked" type="button" role="tab">
-                รถที่รับงานแล้ว
-            </button>
-        </li>
-    </ul>
+    <div class="job-tabs">
+        <ul class="nav nav-pills nav-fill mb-4" id="jobTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+                    <i class="bi bi-check-circle me-1"></i> รถที่ว่างอยู่
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="booked-tab" data-bs-toggle="tab" data-bs-target="#booked" type="button" role="tab">
+                    <i class="bi bi-clock-history me-1"></i> รับงานแล้ว
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="expired-tab" data-bs-toggle="tab" data-bs-target="#expired" type="button" role="tab">
+                    <i class="bi bi-clock me-1"></i> หมดอายุ
+                </button>
+            </li>
+        </ul>
+    </div>
     
     <div class="tab-content" id="jobTabsContent">
         <!-- Active Jobs -->
         <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
-            {% set active_trucks = trucks|selectattr('is_confirmed', 'eq', false)|list %}
+            {% set active_trucks = trucks|selectattr('is_confirmed', 'eq', false)|selectattr('is_expired', 'eq', false)|list %}
             
             {% if active_trucks|length > 0 %}
                 {% for truck in active_trucks %}
-                    <div class="truck-card">
+                    <div class="truck-card animate__animated animate__fadeIn {% if truck.is_new %}new-job{% endif %}">
                         <div class="truck-card-header">
                             <div>
                                 <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
-                                <div class="truck-details">
-                                    {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
-                                    ว่างวันที่: {{ truck.return_date }}
+                                <div class="truck-plate">{{ truck.truck_type }} • {{ truck.plate }}</div>
+                                <div class="truck-date">
+                                    <i class="bi bi-calendar-check me-1"></i> ว่างวันที่: {{ truck.return_date|thai_date }}
                                 </div>
+                                
+                                {% if truck.start|is_bangkok_area or truck.dest|is_bangkok_area %}
+                                <div class="special-price-zone mt-1">
+                                    <i class="bi bi-info-circle-fill"></i> ราคาพิเศษเส้นทางกรุงเทพฯ
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="truck-price">
                                 {{ "{:,}".format(truck.price) }}฿
                             </div>
                         </div>
                         
-                        <div class="truck-actions mt-2">
-                            <form method="POST" action="{{ url_for('confirm_truck', truck_id=truck.id) }}">
-                                <button type="submit" class="btn btn-primary btn-sm">ยืนยันรับงาน</button>
-                            </form>
-                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-sm">แก้ไข</a>
-                            <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">ลบ</button>
-                            </form>
+                        <div class="truck-actions">
+                            <button onclick="showConfirmDialog('{{ url_for('confirm_truck', truck_id=truck.id) }}', 'ยืนยันรับงาน', 'คุณต้องการยืนยันการรับงานนี้หรือไม่?')" class="btn btn-primary btn-sm">
+                                <i class="bi bi-check-circle me-1"></i> ยืนยันรับงาน
+                            </button>
+                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-sm">
+                                <i class="bi bi-pencil me-1"></i> แก้ไข
+                            </a>
+                            <button onclick="showConfirmDialog('{{ url_for('delete_truck', truck_id=truck.id) }}', 'ลบข้อมูลรถ', 'คุณต้องการลบข้อมูลรถคันนี้หรือไม่?')" class="btn btn-outline btn-sm text-danger">
+                                <i class="bi bi-trash me-1"></i> ลบ
+                            </button>
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="alert alert-info">คุณยังไม่มีรถที่ว่างอยู่</div>
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon"><i class="bi bi-truck"></i></div>
+                    <h3>ไม่มีรถที่ว่างอยู่</h3>
+                    <p>คุณยังไม่มีรถที่ลงทะเบียนไว้ในระบบที่ว่างอยู่</p>
+                    <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> เพิ่มรถใหม่
+                    </a>
+                </div>
             {% endif %}
         </div>
         
@@ -63,44 +90,341 @@
             
             {% if booked_trucks|length > 0 %}
                 {% for truck in booked_trucks %}
-                    <div class="truck-card booked">
+                    <div class="truck-card confirmed animate__animated animate__fadeIn">
                         <div class="truck-card-header">
                             <div>
                                 <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
-                                <div class="truck-details">
-                                    {{ truck.truck_type }} • ป้ายทะเบียน: {{ truck.plate }} • 
-                                    <span class="booked-badge">รับงานแล้ว</span>
+                                <div class="truck-plate">{{ truck.truck_type }} • {{ truck.plate }}</div>
+                                <div class="status-info">
+                                    <span class="status-badge confirmed">
+                                        <i class="bi bi-check-circle-fill me-1"></i> รับงานแล้ว
+                                    </span>
+                                    <span class="confirm-date">{{ truck.updated_at.strftime('%d/%m/%Y') }}</span>
                                 </div>
+                                
+                                {% if is_bangkok_area(truck.start) or is_bangkok_area(truck.dest) %}
+                                <div class="special-price-zone mt-1">
+                                    <i class="bi bi-info-circle-fill"></i> ราคาพิเศษเส้นทางกรุงเทพฯ
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="truck-price confirmed">
                                 {{ "{:,}".format(truck.price) }}฿
                             </div>
                         </div>
                         
-                        <div class="truck-job-info mt-2">
-                            <p>ยืนยันรับงานเมื่อ: {{ "วันนี้" if truck.is_new else "เร็วๆ นี้" }}</p>
-                        </div>
-                        
-                        <div class="truck-actions mt-2">
-                            <button class="btn btn-primary btn-sm">ดูรายละเอียดงาน</button>
-                            <button class="btn btn-outline btn-sm">ดูเส้นทาง</button>
+                        <div class="truck-actions">
+                            <button onclick="showTruckDetail({{ truck.id }})" class="btn btn-primary btn-sm">
+                                <i class="bi bi-info-circle me-1"></i> ดูรายละเอียด
+                            </button>
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="alert alert-info">คุณยังไม่มีรถที่รับงานแล้ว</div>
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon"><i class="bi bi-clipboard-check"></i></div>
+                    <h3>ไม่มีรถที่รับงานแล้ว</h3>
+                    <p>คุณยังไม่มีรถที่รับงานอยู่ในระบบ</p>
+                </div>
             {% endif %}
+        </div>
+
+        <!-- Expired Jobs -->
+        <div class="tab-pane fade" id="expired" role="tabpanel" aria-labelledby="expired-tab">
+            {% set expired_trucks = trucks|selectattr('is_expired', 'eq', true)|selectattr('is_confirmed', 'eq', false)|list %}
+            
+            {% if expired_trucks|length > 0 %}
+                {% for truck in expired_trucks %}
+                    <div class="truck-card expired animate__animated animate__fadeIn">
+                        <div class="truck-card-header">
+                            <div>
+                                <div class="truck-route">{{ truck.start }} → {{ truck.dest }}</div>
+                                <div class="truck-plate">{{ truck.truck_type }} • {{ truck.plate }}</div>
+                                <div class="status-info">
+                                    <span class="status-badge expired">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i> หมดอายุ
+                                    </span>
+                                    <span class="confirm-date">{{ truck.return_date|thai_date }}</span>
+                                </div>
+                                
+                                {% if is_bangkok_area(truck.start) or is_bangkok_area(truck.dest) %}
+                                <div class="special-price-zone mt-1">
+                                    <i class="bi bi-info-circle-fill"></i> ราคาพิเศษเส้นทางกรุงเทพฯ
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="truck-price expired">
+                                {{ "{:,}".format(truck.price) }}฿
+                            </div>
+                        </div>
+                        
+                        <div class="truck-actions">
+                            <button onclick="showConfirmDialog('{{ url_for('extend_truck', truck_id=truck.id) }}', 'ขยายเวลาประกาศ', 'คุณต้องการขยายเวลาประกาศไปอีก 7 วันหรือไม่?')" class="btn btn-primary btn-sm">
+                                <i class="bi bi-arrow-clockwise me-1"></i> ขยายเวลา
+                            </button>
+                            <button onclick="showConfirmDialog('{{ url_for('delete_truck', truck_id=truck.id) }}', 'ลบข้อมูลรถ', 'คุณต้องการลบข้อมูลรถคันนี้หรือไม่?')" class="btn btn-outline btn-sm text-danger">
+                                <i class="bi bi-trash me-1"></i> ลบ
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon"><i class="bi bi-calendar-x"></i></div>
+                    <h3>ไม่มีรถที่หมดอายุ</h3>
+                    <p>คุณไม่มีรถที่หมดอายุในระบบ</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmTitle">ยืนยันการดำเนินการ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirmMessage">
+                    คุณต้องการดำเนินการนี้หรือไม่?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">ยกเลิก</button>
+                    <form id="confirmForm" method="POST">
+                        <button type="submit" class="btn btn-primary">ยืนยัน</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
     
     <!-- No Jobs Message -->
     {% if trucks|length == 0 %}
-        <div class="empty-jobs text-center mt-4">
-            <div class="empty-icon mb-3">📋</div>
-            <h3 class="h5">ยังไม่มีงาน</h3>
-            <p>คลิกปุ่ม "+" ด้านล่างเพื่อเพิ่มรถและรับงาน</p>
-            <a href="{{ url_for('add_truck') }}" class="btn btn-primary mt-2">เพิ่มรถใหม่</a>
+        <div class="empty-state fade-in">
+            <div class="empty-state-icon"><i class="bi bi-clipboard"></i></div>
+            <h3>ยังไม่มีงาน</h3>
+            <p>คุณยังไม่มีรถที่ลงทะเบียนในระบบ</p>
+            <a href="{{ url_for('add_truck') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> เพิ่มรถใหม่
+            </a>
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .job-tabs .nav-link {
+        color: var(--text-dark);
+        border-radius: var(--rounded-sm);
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .job-tabs .nav-link.active {
+        background-color: var(--primary-color);
+        color: white;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .job-tabs .nav-link:not(.active):hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+    
+    .truck-card {
+        background-color: white;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-sm);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+        position: relative;
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .truck-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+    
+    .truck-card.confirmed {
+        border-left-color: var(--primary-color);
+        background-color: var(--primary-light);
+    }
+    
+    .truck-card.expired {
+        border-left-color: var(--error-color);
+        background-color: #FFF5F3;
+    }
+    
+    .truck-card-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+    
+    .truck-route {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .truck-plate {
+        color: var(--text-light);
+        font-size: 0.85rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .truck-date {
+        color: var(--text-dark);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .truck-price {
+        font-weight: 700;
+        color: var(--success-color);
+        font-size: 1.2rem;
+    }
+    
+    .truck-price.confirmed {
+        color: var(--primary-color);
+    }
+    
+    .truck-price.expired {
+        color: var(--error-color);
+    }
+    
+    .truck-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .status-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.2rem;
+    }
+    
+    .status-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    
+    .status-badge.confirmed {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .status-badge.expired {
+        background-color: #FFEBE6;
+        color: var(--error-color);
+    }
+    
+    .confirm-date {
+        font-size: 0.8rem;
+        color: var(--text-light);
+    }
+    
+    .new-job::after {
+        content: "ใหม่";
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: var(--error-color);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+    }
+    
+    .empty-state {
+        background-color: white;
+        border-radius: var(--rounded-md);
+        box-shadow: var(--shadow-sm);
+        padding: 2rem;
+        text-align: center;
+        margin-top: 1rem;
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: inline-block;
+        color: var(--primary-color);
+    }
+    
+    .empty-state h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .empty-state p {
+        color: var(--text-light);
+        margin-bottom: 1.5rem;
+    }
+    
+    .special-price-zone {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.8rem;
+        background-color: rgba(0, 82, 204, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: var(--primary-color);
+    }
+    
+    .special-price-zone i {
+        margin-right: 4px;
+    }
+    
+    @media (max-width: 576px) {
+        .truck-actions {
+            flex-direction: column;
+        }
+        
+        .truck-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show confirmation dialog
+    function showConfirmDialog(url, title, message) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = message;
+        document.getElementById('confirmForm').action = url;
+        
+        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        modal.show();
+    }
+    
+    // Auto-activate tab if hash is present
+    document.addEventListener('DOMContentLoaded', function() {
+        const hash = window.location.hash;
+        if (hash) {
+            const tab = document.querySelector(`[data-bs-target="${hash}"]`);
+            if (tab) {
+                const tabTrigger = new bootstrap.Tab(tab);
+                tabTrigger.show();
+            }
+        }
+    });
+    
+    // เพิ่มฟังก์ชันตรวจสอบพื้นที่กรุงเทพฯ
+    function isBangkokArea(location) {
+        return location === "กรุงเทพมหานคร" || location.startsWith("เขต");
+    }
+</script>
 {% endblock %}

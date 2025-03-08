@@ -1,0 +1,924 @@
+<!-- Truck Detail Modal -->
+<div class="modal fade truck-detail-modal" id="truckDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-md-down">
+        <div class="modal-content">
+            <div class="close-handle"></div>
+            
+            <div class="truck-detail-header">
+                <div class="truck-owner">
+                    <div class="owner-avatar">
+                        <span>{{ truck.user.name[0]|upper }}</span>
+                    </div>
+                    <div class="owner-info">
+                        <h2>{{ truck.user.name }}</h2>
+                        <div class="rating">
+                            {% set full_stars = (truck.rating|int) %}
+                            {% set half_star = (truck.rating - full_stars) >= 0.5 %}
+                            {% for i in range(full_stars) %}★{% endfor %}
+                            {% if half_star %}★{% endif %}
+                            {% for i in range(5 - full_stars - (1 if half_star else 0)) %}☆{% endfor %}
+                            <span class="review-count">({{ truck.rating }} จาก {{ truck.review_count }} รีวิว)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="truck-status {% if truck.is_confirmed %}confirmed{% elif truck.is_expired %}expired{% else %}available{% endif %}">
+                    {% if truck.is_confirmed %}
+                        <span>รับงานแล้ว</span>
+                    {% elif truck.is_expired %}
+                        <span>หมดเวลา</span>
+                    {% else %}
+                        <span>ว่าง</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="truck-map">
+                <div class="route-summary">
+                    <i class="bi bi-signpost-2-fill"></i>
+                    <div>{{ truck.start }} → {{ truck.dest }}</div>
+                    <div class="route-distance">{{ distance }} กม. ({{ travel_time }})</div>
+                    
+                    <!-- แสดงแบดจ์ราคาพิเศษเส้นทางกรุงเทพฯ -->
+                    {% if truck.start|is_bangkok_area or truck.dest|is_bangkok_area %}
+                    <div class="route-special-price mt-2">
+                        <span class="badge bg-white text-primary">
+                            <i class="bi bi-info-circle me-1"></i>
+                            ราคาพิเศษเส้นทางกรุงเทพฯ
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="truck-content">
+                <div class="truck-basic-info">
+                    <div class="truck-plate">
+                        <div class="info-label">ป้ายทะเบียน</div>
+                        <div class="info-value">{{ truck.plate }}</div>
+                    </div>
+                    <div class="truck-type">
+                        <div class="info-label">ประเภทรถ</div>
+                        <div class="info-value">{{ truck.truck_type }}</div>
+                    </div>
+                    <div class="truck-available-date">
+                        <div class="info-label">วันที่ว่าง</div>
+                        <div class="info-value">{{ truck.return_date|thai_date }}</div>
+                    </div>
+                </div>
+                
+                <div class="truck-route-info">
+                    <div class="route-item">
+                        <div class="route-point start">
+                            <div class="point-marker"></div>
+                            <div class="point-details">
+                                <div class="point-label">จุดเริ่มต้น</div>
+                                <div class="point-value">{{ truck.start }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="route-line"></div>
+                        
+                        <div class="route-point destination">
+                            <div class="point-marker"></div>
+                            <div class="point-details">
+                                <div class="point-label">จุดหมายปลายทาง</div>
+                                <div class="point-value">{{ truck.dest }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="truck-tabs">
+                        <ul class="nav nav-tabs" id="truckTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-tab-pane" type="button" role="tab" aria-controls="info-tab-pane" aria-selected="true">
+                                    <i class="bi bi-info-circle me-1"></i> ข้อมูล
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-tab-pane" type="button" role="tab" aria-controls="details-tab-pane" aria-selected="false">
+                                    <i class="bi bi-map me-1"></i> เส้นทาง
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-tab-pane" type="button" role="tab" aria-controls="reviews-tab-pane" aria-selected="false">
+                                    <i class="bi bi-star me-1"></i> รีวิว
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="truckTabsContent">
+                            <div class="tab-pane fade show active" id="info-tab-pane" role="tabpanel" aria-labelledby="info-tab" tabindex="0">
+                                <div class="route-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-icon"><i class="bi bi-geo-alt-fill"></i></div>
+                                        <div class="stat-details">
+                                            <div class="stat-label">ระยะทาง</div>
+                                            <div class="stat-value">{{ distance }} กม.</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="stat-item">
+                                        <div class="stat-icon"><i class="bi bi-clock-fill"></i></div>
+                                        <div class="stat-details">
+                                            <div class="stat-label">เวลาโดยประมาณ</div>
+                                            <div class="stat-value">{{ travel_time }}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="stat-item">
+                                        <div class="stat-icon"><i class="bi bi-cash-coin"></i></div>
+                                        <div class="stat-details">
+                                            <div class="stat-label">ราคา</div>
+                                            <div class="stat-value price">{{ "{:,}".format(truck.price) }} บาท</div>
+                                            
+                                            <!-- ระบุอัตราค่าขนส่ง -->
+                                            {% if is_bangkok_area(truck.start) and is_bangkok_area(truck.dest) %}
+                                            <div class="rate-info">อัตรา 25 บาท/กม. (กรุงเทพฯ)</div>
+                                            {% elif is_bangkok_area(truck.start) or is_bangkok_area(truck.dest) %}
+                                            <div class="rate-info">อัตราผสม 12-25 บาท/กม.</div>
+                                            {% else %}
+                                            <div class="rate-info">อัตรา 12 บาท/กม.</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="details-tab-pane" role="tabpanel" aria-labelledby="details-tab" tabindex="0">
+                                <div class="route-details p-3">
+                                    <div class="detail-item">
+                                        <div class="detail-label"><i class="bi bi-geo-alt me-2"></i>จังหวัดต้นทาง:</div>
+                                        <div class="detail-value">{{ truck.start }}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label"><i class="bi bi-geo me-2"></i>จังหวัดปลายทาง:</div>
+                                        <div class="detail-value">{{ truck.dest }}</div>
+                                    </div>
+                                    <div class="detail-item">
+                                        <div class="detail-label"><i class="bi bi-calendar-check me-2"></i>วันที่ว่าง:</div>
+                                        <div class="detail-value">{{ truck.return_date|thai_date }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="reviews-tab-pane" role="tabpanel" aria-labelledby="reviews-tab" tabindex="0">
+                                <div class="reviews-content p-3">
+                                    <div class="reviews-summary">
+                                        <div class="rating-big">{{ truck.rating }} <span class="rating-max">/5</span></div>
+                                        <div class="stars">
+                                            {% set full_stars = (truck.rating|int) %}
+                                            {% set half_star = (truck.rating - full_stars) >= 0.5 %}
+                                            {% for i in range(full_stars) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                            {% if half_star %}<i class="bi bi-star-half"></i>{% endif %}
+                                            {% for i in range(5 - full_stars - (1 if half_star else 0)) %}<i class="bi bi-star"></i>{% endfor %}
+                                        </div>
+                                        <div class="review-count">จาก {{ truck.review_count }} รีวิว</div>
+                                    </div>
+                                    
+                                    {% if truck.review_count > 0 %}
+                                    <div class="reviews-list">
+                                        <div class="review-item">
+                                            <div class="review-header">
+                                                <div class="reviewer-name">คุณสมชาย</div>
+                                                <div class="review-stars">★★★★★</div>
+                                            </div>
+                                            <div class="review-text">บริการดีมาก ขนส่งสินค้าตรงเวลา แนะนำเลย</div>
+                                        </div>
+                                        <div class="review-item">
+                                            <div class="review-header">
+                                                <div class="reviewer-name">คุณสมศรี</div>
+                                                <div class="review-stars">★★★★☆</div>
+                                            </div>
+                                            <div class="review-text">รถสะอาด คนขับสุภาพ แนะนำค่ะ</div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="no-reviews">
+                                        <i class="bi bi-emoji-smile fs-4"></i>
+                                        <p>ยังไม่มีรีวิว</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if truck.user_id != current_user.id %}
+                <div class="truck-actions mt-4">
+                    <a href="tel:{{ truck.user.phone }}" class="btn btn-primary btn-lg w-100 mb-2 call-button">
+                        <i class="bi bi-telephone-fill me-2"></i> โทรหาคนขับ
+                    </a>
+                    <button onclick="openChatModal({{ truck.id }}, '{{ truck.user.name }}')" class="btn btn-outline btn-lg w-100 chat-button">
+                        <i class="bi bi-chat-text-fill me-2"></i> แชทกับคนขับ
+                    </button>
+                </div>
+                {% else %}
+                    {% if not truck.is_confirmed and not truck.is_expired %}
+                    <div class="truck-actions mt-4">
+                        <form method="POST" action="{{ url_for('confirm_truck', truck_id=truck.id) }}" class="mb-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-check-circle-fill me-2"></i> ยืนยันรับงาน
+                            </button>
+                        </form>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('edit_truck', truck_id=truck.id) }}" class="btn btn-outline btn-lg flex-grow-1">
+                                <i class="bi bi-pencil-fill me-1"></i> แก้ไข
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}" class="flex-grow-1">
+                                <button type="submit" class="btn btn-outline btn-lg w-100 text-danger" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">
+                                    <i class="bi bi-trash-fill me-1"></i> ลบ
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if truck.is_expired %}
+                    <div class="truck-actions mt-4">
+                        <form method="POST" action="{{ url_for('extend_truck', truck_id=truck.id) }}" class="mb-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-arrow-clockwise me-2"></i> ขยายเวลาประกาศ
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_truck', truck_id=truck.id) }}">
+                            <button type="submit" class="btn btn-outline btn-lg w-100 text-danger" onclick="return confirm('ยืนยันการลบข้อมูลรถนี้?')">
+                                <i class="bi bi-trash-fill me-1"></i> ลบ
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .truck-detail-header {
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .truck-owner {
+        display: flex;
+        align-items: center;
+    }
+    
+    .owner-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-right: 12px;
+        flex-shrink: 0;
+    }
+    
+    .owner-info h2 {
+        font-size: 18px;
+        margin-bottom: 3px;
+        font-weight: 600;
+    }
+    
+    .rating {
+        color: var(--warning-color);
+        font-size: 14px;
+    }
+    
+    .review-count {
+        color: var(--text-light);
+        font-size: 12px;
+        margin-left: 5px;
+    }
+    
+    .truck-status {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+    
+    .truck-status.available {
+        background-color: #E3FCEF;
+        color: var(--success-color);
+    }
+    
+    .truck-status.confirmed {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+    
+    .truck-status.expired {
+        background-color: #FFEBE6;
+        color: var(--error-color);
+    }
+    
+    .truck-map {
+        height: auto;
+        padding: 30px 20px;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .route-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .route-summary i {
+        font-size: 36px;
+        margin-bottom: 15px;
+    }
+    
+    .route-summary div {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    .route-distance {
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        opacity: 0.8;
+    }
+    
+    .route-special-price .badge {
+        font-size: 12px;
+        padding: 6px 12px;
+        font-weight: 500;
+    }
+    
+    .truck-content {
+        padding: 15px;
+    }
+    
+    .truck-basic-info {
+        display: flex;
+        margin-bottom: 15px;
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+        padding: 10px;
+    }
+    
+    .truck-basic-info > div {
+        flex: 1;
+        padding: 0 10px;
+    }
+    
+    .info-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+    
+    .info-value {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+    
+    .route-item {
+        margin-bottom: 20px;
+    }
+    
+    .route-point {
+        display: flex;
+        align-items: flex-start;
+        position: relative;
+    }
+    
+    .point-marker {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-right: 15px;
+        margin-top: 5px;
+        flex-shrink: 0;
+    }
+    
+    .route-point.start .point-marker {
+        background-color: var(--success-color);
+    }
+    
+    .route-point.destination .point-marker {
+        background-color: var(--error-color);
+    }
+    
+    .point-details {
+        flex: 1;
+    }
+    
+    .point-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 5px;
+    }
+    
+    .point-value {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+    
+    .route-line {
+        width: 2px;
+        height: 30px;
+        background-color: #DFE1E6;
+        margin-left: 7px;
+        margin-bottom: 5px;
+        margin-top: 5px;
+    }
+    
+    .truck-tabs {
+        margin-top: 15px;
+    }
+    
+    .truck-tabs .nav-tabs {
+        border-bottom: 1px solid #e0e0e0;
+        margin-bottom: 15px;
+    }
+    
+    .truck-tabs .nav-link {
+        color: var(--text-light);
+        border: none;
+        padding: 10px 15px;
+        font-weight: 500;
+        position: relative;
+    }
+    
+    .truck-tabs .nav-link.active {
+        color: var(--primary-color);
+        background-color: transparent;
+        border: none;
+    }
+    
+    .truck-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--primary-color);
+    }
+    
+    .route-stats {
+        display: flex;
+        flex-wrap: wrap;
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+        padding: 5px;
+    }
+    
+    .stat-item {
+        flex: 1 0 30%;
+        min-width: 100px;
+        display: flex;
+        align-items: center;
+        padding: 12px;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(0, 82, 204, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        font-size: 18px;
+        flex-shrink: 0;
+        color: var(--primary-color);
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 2px;
+    }
+    
+    .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dark);
+    }
+    
+    .stat-value.price {
+        color: var(--success-color);
+    }
+    
+    .rate-info {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-top: 4px;
+    }
+    
+    .route-details {
+        background-color: var(--bg-light);
+        border-radius: var(--rounded-sm);
+    }
+    
+    .detail-item {
+        padding: 10px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-size: 14px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+    }
+    
+    .detail-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    .reviews-summary {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .rating-big {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+    
+    .rating-max {
+        font-size: 24px;
+        color: var(--text-light);
+    }
+    
+    .stars {
+        font-size: 24px;
+        color: var(--warning-color);
+        margin: 5px 0;
+    }
+    
+    .stars i {
+        margin: 0 2px;
+    }
+    
+    .review-count {
+        color: var(--text-light);
+        font-size: 14px;
+    }
+    
+    .reviews-list {
+        margin-top: 20px;
+    }
+    
+    .review-item {
+        background-color: white;
+        border-radius: var(--rounded-sm);
+        padding: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .reviewer-name {
+        font-weight: 600;
+    }
+    
+    .review-stars {
+        color: var(--warning-color);
+    }
+    
+    .review-text {
+        color: var(--text-dark);
+        font-size: 14px;
+    }
+    
+    .no-reviews {
+        text-align: center;
+        padding: 30px 0;
+        color: var(--text-light);
+    }
+    
+    .no-reviews i {
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .call-button {
+        background: linear-gradient(135deg, #36B37E, #00875A);
+        border: none;
+        box-shadow: 0 4px 15px rgba(54, 179, 126, 0.4);
+    }
+    
+    .call-button:hover {
+        background: linear-gradient(135deg, #30A070, #007A50);
+        box-shadow: 0 6px 20px rgba(54, 179, 126, 0.5);
+    }
+    
+    .chat-button {
+        background-color: white;
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .chat-button:hover {
+        background-color: var(--primary-light);
+    }
+    
+    /* Chat modal styling */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        background-color: #f5f9ff;
+    }
+    
+    .chat-message-date {
+        text-align: center;
+        color: var(--text-light);
+        font-size: 12px;
+        margin: 10px 0;
+    }
+    
+    .chat-message {
+        margin-bottom: 15px;
+        display: flex;
+        flex-direction: column;
+        max-width: 75%;
+    }
+    
+    .chat-message.sent {
+        align-self: flex-end;
+        align-items: flex-end;
+        margin-left: auto;
+    }
+    
+    .chat-message.received {
+        align-self: flex-start;
+        align-items: flex-start;
+        margin-right: auto;
+    }
+    
+    .chat-bubble {
+        padding: 10px 15px;
+        border-radius: 18px;
+        font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        word-break: break-word;
+    }
+    
+    .chat-message.sent .chat-bubble {
+        background-color: var(--primary-color);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .chat-message.received .chat-bubble {
+        background-color: white;
+        color: var(--text-dark);
+        border-bottom-left-radius: 4px;
+    }
+    
+    .chat-time {
+        font-size: 11px;
+        color: var(--text-light);
+        margin-top: 3px;
+    }
+    
+    .chat-input-container {
+        display: flex;
+        padding: 10px;
+        background-color: white;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .chat-input {
+        flex: 1;
+        border: 1px solid #e0e0e0;
+        border-radius: 24px;
+        padding: 10px 15px;
+        font-size: 14px;
+        outline: none;
+    }
+    
+    .chat-input:focus {
+        border-color: var(--primary-color);
+    }
+    
+    .chat-send-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: none;
+        background-color: var(--primary-color);
+        color: white;
+        margin-left: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chat-send-btn:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    .truck-actions {
+        padding: 10px 0;
+    }
+    
+    @media (max-width: 576px) {
+        .truck-basic-info {
+            flex-wrap: wrap;
+        }
+        
+        .truck-basic-info > div {
+            flex: 1 0 50%;
+            margin-bottom: 10px;
+        }
+        
+        .stat-item {
+            flex: 1 0 100%;
+        }
+    }
+    
+    @media (min-width: 768px) {
+        .truck-map {
+            height: 250px;
+        }
+        
+        .truck-content {
+            padding: 20px;
+        }
+    }
+</style>
+
+<script>
+    // Chat modal functionality
+    function openChatModal(truckId, driverName) {
+        // Create and append chat modal if it doesn't exist
+        if (!document.getElementById('chatModal')) {
+            const chatModalHTML = `
+                <div class="modal fade" id="chatModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-chat-dots me-2"></i> 
+                                    แชทกับ <span id="chat-receiver-name"></span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                                <div class="chat-container">
+                                    <div class="chat-messages" id="chat-messages">
+                                        <div class="chat-message-date">วันนี้</div>
+                                    </div>
+                                    <div class="chat-input-container">
+                                        <input type="text" class="chat-input" id="chat-input" placeholder="พิมพ์ข้อความ...">
+                                        <button class="chat-send-btn" id="chat-send-btn">
+                                            <i class="bi bi-send-fill"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modalElement = document.createElement('div');
+            modalElement.innerHTML = chatModalHTML;
+            document.body.appendChild(modalElement.firstElementChild);
+            
+            // Add event listener for sending messages
+            document.getElementById('chat-send-btn').addEventListener('click', sendChatMessage);
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        }
+        
+        // Set driver name and truck ID
+        document.getElementById('chat-receiver-name').textContent = driverName;
+        document.getElementById('chatModal').setAttribute('data-truck-id', truckId);
+        
+        // Add demo messages
+        const messagesContainer = document.getElementById('chat-messages');
+        messagesContainer.innerHTML = `
+            <div class="chat-message-date">วันนี้</div>
+            <div class="chat-message received">
+                <div class="chat-bubble">สวัสดีครับ มีอะไรให้ช่วยไหมครับ</div>
+                <div class="chat-time">10:45</div>
+            </div>
+        `;
+        
+        // Show modal
+        const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
+        chatModal.show();
+    }
+    
+    function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+        
+        if (message) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                              now.getMinutes().toString().padStart(2, '0');
+            
+            // Add sent message
+            messagesContainer.innerHTML += `
+                <div class="chat-message sent">
+                    <div class="chat-bubble">${message}</div>
+                    <div class="chat-time">${timeString}</div>
+                </div>
+            `;
+            
+            // Clear input
+            input.value = '';
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Add demo response after a delay
+            setTimeout(() => {
+                messagesContainer.innerHTML += `
+                    <div class="chat-message received">
+                        <div class="chat-bubble">ได้ครับ ขอบคุณที่สนใจบริการของเรา จะติดต่อกลับโดยเร็วที่สุดครับ</div>
+                        <div class="chat-time">${timeString}</div>
+                    </div>
+                `;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 1000);
+        }
+    }
+
+    // Handle drag to dismiss on mobile
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('truckDetailModal');
+        const handle = modal.querySelector('.close-handle');
+        let startY;
+        let currentY;
+        
+        handle.addEventListener('touchstart', function(e) {
+            startY = e.touches[0].clientY;
+        });
+        
+        handle.addEventListener('touchmove', function(e) {
+            currentY = e.touches[0].clientY;
+            const deltaY = currentY - startY;
+            
+            if (deltaY > 0) {
+                modal.querySelector('.modal-dialog').style.transform = `translate(0, ${10 + deltaY/10}%)`;
+            }
+        });
+        
+        handle.addEventListener('touchend', function() {
+            const deltaY = currentY - startY;
+            if (deltaY > 100) {
+                bootstrap.Modal.getInstance(modal).hide();
+            } else {
+                modal.querySelector('.modal-dialog').style.transform = '';
+            }
+        });
+        
+        // Auto-select first tab
+        const firstTab = new bootstrap.Tab(document.querySelector('#truckTabs .nav-link'));
+        firstTab.show();
+    });
+</script>
