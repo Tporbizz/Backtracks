@@ -216,57 +216,134 @@
 </style>
 
 <script>
-    // Map initialization function (will be called when modal is shown)
-    window.initTruckDetailMap = function() {
-        var map = L.map('map').setView([{{ truck.lat }}, {{ truck.lon }}], 10);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '© <a href="https://carto.com/attributions">CARTO</a>'
-        }).addTo(map);
-        
-        // Start and destination coordinates
-        var startLatLng = [{{ truck.lat }}, {{ truck.lon }}];
-        var destLatLng = [{{ provinces[truck.dest][0] }}, {{ provinces[truck.dest][1] }}];
-        
-        // Start and destination markers
-        var startMarker = L.circleMarker(startLatLng, {
-            radius: 7,
-            fillColor: '#36B37E',
-            color: '#fff',
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-        }).addTo(map);
-        
-        var destMarker = L.circleMarker(destLatLng, {
-            radius: 7,
-            fillColor: '#FF5630',
-            color: '#fff',
-            weight: 1,
-            opacity: 1,
-            fillOpacity: 0.8
-        }).addTo(map);
-        
-        // Add popup
-        startMarker.bindPopup('<strong>{{ truck.start }}</strong>');
-        destMarker.bindPopup('<strong>{{ truck.dest }}</strong>');
-        
-        // Add route line
-        var routeLine = L.polyline([startLatLng, destLatLng], {
-            color: '#0052CC',
-            weight: 2,
-            opacity: 0.7
-        }).addTo(map);
-        
-        // Fit bounds to show the entire route
-        map.fitBounds(routeLine.getBounds(), {
-            padding: [20, 20]
-        });
-    };
+    // เพิ่มการตรวจสอบความพร้อมของ DOM ก่อนใช้งาน
+    function openChatModal(truckId, driverName) {
+        try {
+            // สร้าง modal ใหม่ทุกครั้งที่เปิด เพื่อหลีกเลี่ยงปัญหาการสร้างซ้ำ
+            let oldModal = document.getElementById('chatModal');
+            if (oldModal) {
+                oldModal.remove();
+            }
+            
+            const chatModalHTML = `
+                <div class="modal fade" id="chatModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-chat-dots me-2"></i> 
+                                    แชทกับ <span id="chat-receiver-name"></span>
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-0">
+                                <div class="chat-container">
+                                    <div class="chat-messages" id="chat-messages">
+                                        <div class="chat-message-date">วันนี้</div>
+                                    </div>
+                                    <div class="chat-input-container">
+                                        <input type="text" class="chat-input" id="chat-input" placeholder="พิมพ์ข้อความ...">
+                                        <button class="chat-send-btn" id="chat-send-btn">
+                                            <i class="bi bi-send-fill"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const modalElement = document.createElement('div');
+            modalElement.innerHTML = chatModalHTML;
+            document.body.appendChild(modalElement.firstElementChild);
+            
+            // ตั้งค่าชื่อคนขับและ truck ID
+            document.getElementById('chat-receiver-name').textContent = driverName;
+            document.getElementById('chatModal').setAttribute('data-truck-id', truckId);
+            
+            // เพิ่มข้อความตัวอย่าง
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = `
+                <div class="chat-message-date">วันนี้</div>
+                <div class="chat-message received">
+                    <div class="chat-bubble">สวัสดีครับ มีอะไรให้ช่วยไหมครับ</div>
+                    <div class="chat-time">10:45</div>
+                </div>
+            `;
+            
+            // รอให้ DOM พร้อมก่อนเพิ่ม event listener
+            setTimeout(() => {
+                const sendButton = document.getElementById('chat-send-btn');
+                const chatInput = document.getElementById('chat-input');
+                
+                if (sendButton) {
+                    sendButton.addEventListener('click', sendChatMessage);
+                }
+                
+                if (chatInput) {
+                    chatInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            sendChatMessage();
+                        }
+                    });
+                    
+                    // โฟกัสที่ช่องข้อความเมื่อเปิด modal
+                    chatInput.focus();
+                }
+            }, 300);
+            
+            // แสดง modal
+            const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
+            chatModal.show();
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการเปิด chat modal:", error);
+            alert("ไม่สามารถเปิดแชทได้ในขณะนี้ กรุณาลองใหม่ภายหลัง");
+        }
+    }
     
-    // Initialize map when modal is shown
-    document.addEventListener('DOMContentLoaded', function() {
-        $('#truckDetailModal').on('shown.bs.modal', function() {
-            window.initTruckDetailMap();
-        });
-    });
+    function sendChatMessage() {
+        try {
+            const input = document.getElementById('chat-input');
+            if (!input) return;
+            
+            const message = input.value.trim();
+            
+            if (message) {
+                const messagesContainer = document.getElementById('chat-messages');
+                if (!messagesContainer) return;
+                
+                const now = new Date();
+                const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                                now.getMinutes().toString().padStart(2, '0');
+                
+                // เพิ่มข้อความที่ส่ง
+                messagesContainer.innerHTML += `
+                    <div class="chat-message sent">
+                        <div class="chat-bubble">${message}</div>
+                        <div class="chat-time">${timeString}</div>
+                    </div>
+                `;
+                
+                // ล้างข้อความใน input
+                input.value = '';
+                
+                // เลื่อนไปที่ข้อความล่าสุด
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // เพิ่มข้อความตอบกลับตัวอย่างหลังจากรอสักครู่
+                setTimeout(() => {
+                    messagesContainer.innerHTML += `
+                        <div class="chat-message received">
+                            <div class="chat-bubble">ได้ครับ ขอบคุณที่สนใจบริการของเรา จะติดต่อกลับโดยเร็วที่สุดครับ</div>
+                            <div class="chat-time">${timeString}</div>
+                        </div>
+                    `;
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 1000);
+            }
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการส่งข้อความ:", error);
+        }
+    }
 </script>

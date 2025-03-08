@@ -12,7 +12,7 @@
             {{ search_form.hidden_tag() }}
             
             <div class="mb-2">
-                <label for="start_province" class="form-label">จังหวัด/เขตต้นทาง</label>
+                <label for="start_province" class="form-label">จังหวัด/เขตปลายทาง</label>
                 <div class="input-wrapper">
                     <span class="input-icon"><i class="bi bi-geo-alt"></i></span>
                     {{ search_form.start_province(class="form-control custom-select", id="start_province") }}
@@ -52,11 +52,7 @@
                                 {% endif %}
                             </div>
                             
-                            {% if truck.start|is_bangkok_area or truck.dest|is_bangkok_area %}
-                            <div class="special-price-zone mt-1">
-                                <i class="bi bi-info-circle-fill"></i> ราคาพิเศษเส้นทางกรุงเทพฯ
-                            </div>
-                            {% endif %}
+                            
                         </div>
                         <div class="truck-price {% if truck.is_confirmed %}confirmed{% endif %}">
                             {% if truck.is_confirmed %}

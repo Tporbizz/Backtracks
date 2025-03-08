@@ -61,14 +61,8 @@
         <div class="referral-share mt-3">
             <p>แชร์ลิงก์:</p>
             <div class="share-buttons">
-                <a href="#" class="share-btn facebook">
-                    <i class="bi bi-facebook me-1"></i> Facebook
-                </a>
-                <a href="#" class="share-btn line">
-                    <i class="bi bi-line me-1"></i> Line
-                </a>
-                <a href="#" class="share-btn twitter">
-                    <i class="bi bi-twitter me-1"></i> Twitter
+                <a href="#" class="share-btn line w-100" onclick="shareToLine()">
+                    <i class="bi bi-line me-1"></i> แชร์ผ่าน Line
                 </a>
             </div>
         </div>
@@ -309,54 +303,102 @@
 
 {% block scripts %}
 <script>
-    function copyReferralCode() {
-        var code = document.querySelector('.referral-text').innerText;
-        navigator.clipboard.writeText(code).then(function() {
-            // Create toast notification
-            let toast = document.createElement('div');
-            toast.className = 'toast-notification';
-            toast.textContent = 'คัดลอกรหัสแนะนำแล้ว: ' + code;
-            document.body.appendChild(toast);
-            
-            // Show and auto-hide toast
+function shareToLine() {
+    // รับโค้ดแนะนำ
+    const referralCode = document.querySelector('.referral-text').innerText;
+    
+    // ข้อความที่จะแชร์
+    const message = `สวัสดีครับ ลองใช้ BackTracks แพลตฟอร์มจัดการรถสไลด์แห่งใหม่ดูสิ ใช้โค้ดของฉัน "${referralCode}" รับส่วนลด 5% ทันที! ดาวน์โหลดที่ https://backtracks.co.th/`;
+    
+    // สร้าง URL สำหรับแชร์ไปยัง Line
+    const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
+    
+    // เปิดหน้าต่างใหม่สำหรับแชร์
+    window.open(lineShareUrl, '_blank');
+    
+    // แสดงการคัดลอกโค้ดสำเร็จ
+    showToast('คัดลอกโค้ด ' + referralCode + ' แล้ว พร้อมแชร์ไปยัง Line');
+    
+    // คัดลอกโค้ดลงคลิปบอร์ด
+    navigator.clipboard.writeText(referralCode)
+        .then(() => console.log('คัดลอกโค้ดสำเร็จ'))
+        .catch(err => console.error('ไม่สามารถคัดลอกโค้ด:', err));
+}
+
+function showToast(message) {
+    let toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
             setTimeout(() => {
-                toast.classList.add('show');
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    setTimeout(() => {
-                        document.body.removeChild(toast);
-                    }, 300);
-                }, 2000);
-            }, 100);
-        }, function() {
-            alert('ไม่สามารถคัดลอกได้');
-        });
+                document.body.removeChild(toast);
+            }, 300);
+        }, 2000);
+    }, 100);
+}
+</script>
+<script>
+    function shareToLine() {
+        // รับโค้ดแนะนำ
+        const referralCode = document.querySelector('.referral-text').innerText;
+        
+        // ข้อความที่จะแชร์
+        const message = `สวัสดีครับ ลองใช้ BackTracks แพลตฟอร์มจัดการรถสไลด์แห่งใหม่ดูสิ ใช้โค้ดของฉัน "${referralCode}" รับส่วนลด 5% ทันที! ดาวน์โหลดที่ https://backtracks.co.th/`;
+        
+        // สร้าง URL สำหรับแชร์ไปยัง Line
+        const lineShareUrl = `https://line.me/R/msg/text/?${encodeURIComponent(message)}`;
+        
+        // เปิดหน้าต่างใหม่สำหรับแชร์
+        window.open(lineShareUrl, '_blank');
+        
+        // แสดงการคัดลอกโค้ดสำเร็จ
+        showToast('คัดลอกโค้ด ' + referralCode + ' แล้ว พร้อมแชร์ไปยัง Line');
+        
+        // คัดลอกโค้ดลงคลิปบอร์ด
+        navigator.clipboard.writeText(referralCode)
+            .then(() => console.log('คัดลอกโค้ดสำเร็จ'))
+            .catch(err => console.error('ไม่สามารถคัดลอกโค้ด:', err));
     }
     
-    // Add inline styles for toast notification
-    document.head.insertAdjacentHTML('beforeend', `
-    <style>
-        .toast-notification {
-            position: fixed;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100%);
-            background-color: var(--primary-color);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            font-size: 14px;
-            font-weight: 500;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1050;
-        }
+    function showToast(message) {
+        let toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.textContent = message;
+        document.body.appendChild(toast);
         
-        .toast-notification.show {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 2000);
+        }, 100);
+    }
+    </script>
+
+<!-- ปรับปรุง CSS สำหรับปุ่ม Line -->
+<style>
+    .share-btn.line {
+        background-color: #06C755;
+        color: white;
+        padding: 12px;
+        font-size: 16px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .share-btn.line:hover {
+        background-color: #05a648;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
     </style>
     `);
 </script>

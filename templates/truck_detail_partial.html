@@ -39,14 +39,7 @@
                     <div class="route-distance">{{ distance }} กม. ({{ travel_time }})</div>
                     
                     <!-- แสดงแบดจ์ราคาพิเศษเส้นทางกรุงเทพฯ -->
-                    {% if truck.start|is_bangkok_area or truck.dest|is_bangkok_area %}
-                    <div class="route-special-price mt-2">
-                        <span class="badge bg-white text-primary">
-                            <i class="bi bi-info-circle me-1"></i>
-                            ราคาพิเศษเส้นทางกรุงเทพฯ
-                        </span>
-                    </div>
-                    {% endif %}
+                    
                 </div>
             </div>
             
@@ -132,13 +125,7 @@
                                             <div class="stat-value price">{{ "{:,}".format(truck.price) }} บาท</div>
                                             
                                             <!-- ระบุอัตราค่าขนส่ง -->
-                                            {% if is_bangkok_area(truck.start) and is_bangkok_area(truck.dest) %}
-                                            <div class="rate-info">อัตรา 25 บาท/กม. (กรุงเทพฯ)</div>
-                                            {% elif is_bangkok_area(truck.start) or is_bangkok_area(truck.dest) %}
-                                            <div class="rate-info">อัตราผสม 12-25 บาท/กม.</div>
-                                            {% else %}
-                                            <div class="rate-info">อัตรา 12 บาท/กม.</div>
-                                            {% endif %}
+                                            
                                         </div>
                                     </div>
                                 </div>

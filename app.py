@@ -142,6 +142,8 @@ class Notification(db.Model):
     user = db.relationship('User', backref='notifications')
     truck = db.relationship('Truck', backref='notifications')
 
+    
+
 # ฟังก์ชันคำนวณระยะทาง
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371
@@ -268,7 +270,7 @@ class TruckForm(FlaskForm):
     submit = SubmitField('ลงทะเบียนรับงาน')
 
 class SearchForm(FlaskForm):
-    start_province = SelectField('จังหวัดต้นทาง', choices=[('', 'เลือกจังหวัด')] + [(p, p) for p in provinces.keys()])
+    start_province = SelectField('จังหวัดปลายทาง', choices=[('', 'เลือกจังหวัด')] + [(p, p) for p in provinces.keys()])
     submit = SubmitField('ค้นหา')
 
 class AdminUserEditForm(FlaskForm):
@@ -551,30 +553,31 @@ def search():
     trucks = Truck.query.filter_by(is_confirmed=False, is_expired=False).order_by(Truck.id.desc()).all() or []
     
     if request.method == "POST":
-        start_province = search_form.start_province.data
+        dest_province = search_form.start_province.data
         
-        if start_province:
-            # ค้นหาเฉพาะจังหวัด
-            if start_province == "กรุงเทพมหานคร":
-                # ถ้าค้นหากรุงเทพฯ ให้แสดงรถที่มีต้นทางในกรุงเทพฯ และเขตต่างๆ
+        if dest_province:
+            # ค้นหาเฉพาะจังหวัดปลายทาง (แทนที่จะเป็นต้นทาง)
+            if dest_province == "กรุงเทพมหานคร":
+                # ถ้าค้นหากรุงเทพฯ ให้แสดงรถที่มีปลายทางในกรุงเทพฯ และเขตต่างๆ
                 trucks = Truck.query.filter(
-                    (Truck.start == "กรุงเทพมหานคร") | 
-                    (Truck.start.startswith("เขต")), 
+                    (Truck.dest == "กรุงเทพมหานคร") | 
+                    (Truck.dest.startswith("เขต")), 
                     Truck.is_confirmed == False, 
                     Truck.is_expired == False
                 ).order_by(Truck.id.desc()).all() or []
             else:
-                trucks = Truck.query.filter_by(start=start_province, is_confirmed=False, is_expired=False).order_by(Truck.id.desc()).all() or []
+                trucks = Truck.query.filter_by(dest=dest_province, is_confirmed=False, is_expired=False).order_by(Truck.id.desc()).all() or []
             
             # ถ้าไม่พบรถที่ตรงเงื่อนไข
             if not trucks:
-                flash(f"ไม่พบรถที่ออกจากจังหวัด{start_province}", "info")
+                flash(f"ไม่พบรถที่มีปลายทางจังหวัด{dest_province}", "info")
     
     # ตรวจสอบสถานะงานและงานใหม่
     for truck in trucks:
         truck.is_new = is_new_job(truck.return_date)
         
     return render_template("search.html", search_form=search_form, trucks=trucks, provinces=provinces)
+
 
 # เส้นทางสำหรับเพิ่มรถ
 @app.route("/add_truck", methods=["GET", "POST"])
@@ -697,13 +700,6 @@ def change_password():
     return render_template("change_password.html", form=form)
 
 # เส้นทางสำหรับแจ้งเตือน
-@app.route("/notifications")
-@login_required
-def notifications():
-    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
-    return render_template("notifications.html", notifications=notifications)
-
-# เส้นทางสำหรับอ่านแจ้งเตือน
 @app.route("/notifications/read/<int:notification_id>")
 @login_required
 def read_notification(notification_id):
@@ -715,9 +711,14 @@ def read_notification(notification_id):
     notification.is_read = True
     db.session.commit()
     
-    # ถ้ามี truck_id ให้ redirect ไปที่ truck นั้น
+    # ถ้ามี truck_id ให้ redirect ไปที่ truck นั้น แต่ต้องตรวจสอบว่า truck ยังมีอยู่หรือไม่
     if notification.truck_id:
-        return redirect(url_for("truck_detail", truck_id=notification.truck_id))
+        truck = Truck.query.get(notification.truck_id)
+        if truck:
+            return redirect(url_for("truck_detail", truck_id=notification.truck_id))
+        else:
+            flash("ไม่พบข้อมูลรถที่ต้องการ อาจถูกลบไปแล้ว", "error")
+            return redirect(url_for("notifications"))
     
     return redirect(url_for("notifications"))
 
@@ -1182,6 +1183,23 @@ def admin_delete_truck(truck_id):
     flash("ลบข้อมูลรถสำเร็จ!", "success")
     return redirect(url_for("admin_trucks"))
 
+@app.route("/setup_admin")
+def setup_admin():
+    with app.app_context():
+        try:
+            admin = User.query.filter_by(email="admin@backtracks.com").first()
+            if not admin:
+                admin_user = User(email="admin@backtracks.com", phone="0812345678", 
+                                name="BackTracks Admin", password="admin123456", is_admin=True)
+                db.session.add(admin_user)
+                db.session.commit()
+                return "เพิ่มผู้ดูแลระบบสำเร็จ!"
+            else:
+                admin.is_admin = True
+                db.session.commit()
+                return "อัปเดตสถานะผู้ดูแลระบบสำเร็จ!"
+        except Exception as e:
+            return f"เกิดข้อผิดพลาด: {str(e)}"
 # รันแอป
 if __name__ == "__main__":
     app.run(debug=True, host='127.0.0.1', port=5000)
